@@ -95,6 +95,17 @@ export const WAR = {
   wallBonus: 0.05,
 } as const;
 
+/** Gloria: a ludus's lasting fame from wars. Never resets, never below 0. */
+export const GLORIA = {
+  win: 30,
+  /** Beating a ludus with more gloria: +1 per this many it had more, at most maxUpset. */
+  upsetStep: 10,
+  maxUpset: 30,
+  loss: 10,
+  /** A loss with at least this share of the winner's score costs nothing. */
+  closeShare: 0.9,
+} as const;
+
 export const DUEL = { days: 7 } as const;
 
 export const BELLUM = {

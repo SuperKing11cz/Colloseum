@@ -37,6 +37,7 @@ import {
   type BuildingId,
   type OwnerKind,
 } from '@/lib/game/fortress';
+import { EMPTY_RECORD, gloriaChange, type WarRecord } from '@/lib/game/gloria';
 import { seasonOf } from '@/lib/game/levels';
 import { sessionVerification, type GymVisit } from '@/lib/game/visits';
 import { isDemo, supabase } from '@/lib/supabase';
@@ -47,6 +48,7 @@ import { useGame as useGameStore } from '@/stores/game';
 import type { ArenaScope } from '@/stores/prefs';
 
 const PUBLIC_COLS = 'id,username,display_name,avatar_url,home_gym_id';
+const RECORD_COLS = 'gloria,best_gloria,wins,losses,defences,upsets,streak,best_streak';
 
 function me(): string {
   return useData.getState().userId;
@@ -124,6 +126,8 @@ function demoWars(): War[] {
       spoils: null,
       damaged_building: null,
       settled_at: null,
+      attacker_gloria: null,
+      defender_gloria: null,
     },
     {
       id: stableUuid('war:aquila'),
@@ -142,6 +146,8 @@ function demoWars(): War[] {
       spoils: 84,
       damaged_building: 'cable',
       settled_at: hoursFromNow(-24 * 9),
+      attacker_gloria: 30,
+      defender_gloria: -10,
     },
   ];
   return demo.wars;
@@ -448,6 +454,8 @@ export interface Ludus {
   buildings: Building[];
   myRole: 'leader' | 'member';
   limit: number;
+  /** Gloria and the war record. */
+  record: WarRecord;
 }
 
 function demoLudus(): Ludus | null {
@@ -474,6 +482,7 @@ function demoLudus(): Ludus | null {
     buildings,
     myRole: members.find((m) => m.id === uid)?.role ?? 'member',
     limit: memberLimit(buildings),
+    record: demo.ludus.record,
   };
 }
 
@@ -488,7 +497,7 @@ export function useMyLudus() {
       if (!mine) return null;
       const id = mine.ludus_id;
       const [ludus, members, treasury, buildings] = await Promise.all([
-        supabase.from('ludi').select('id,name,motto,code').eq('id', id).single(),
+        supabase.from('ludi').select(`id,name,motto,code,${RECORD_COLS}`).eq('id', id).single(),
         supabase
           .from('ludus_members')
           .select(`role,joined_at,profiles(${PUBLIC_COLS})`)
@@ -502,7 +511,18 @@ export function useMyLudus() {
           .maybeSingle(),
         supabase.from('buildings').select('*').eq('owner_kind', 'ludus').eq('owner_id', id),
       ]);
-      const l = check(ludus) as { id: string; name: string; motto: string; code: string };
+      const {
+        id: _id,
+        name,
+        motto,
+        code,
+        ...record
+      } = check(ludus) as {
+        id: string;
+        name: string;
+        motto: string;
+        code: string;
+      } & WarRecord;
       const list = (
         check(members) as unknown as {
           role: 'leader' | 'member';
@@ -512,12 +532,16 @@ export function useMyLudus() {
       ).map((m) => ({ ...m.profiles, role: m.role, joined_at: m.joined_at }));
       const b = check(buildings) as Building[];
       return {
-        ...l,
+        id,
+        name,
+        motto,
+        code,
         members: list,
         treasury: (check(treasury) as { denarii: number } | null)?.denarii ?? 0,
         buildings: b,
         myRole: list.find((m) => m.id === me())?.role ?? 'member',
         limit: memberLimit(b),
+        record,
       };
     },
   });
@@ -543,6 +567,52 @@ export function useLudusDirectory(query: string, enabled = true) {
         await supabase.rpc('ludus_directory', { p_query: query.trim() }),
       ) as LudusListing[];
       return rows.map((r) => ({ ...r, members: Number(r.members) }));
+    },
+  });
+}
+
+export interface LudusRank extends LudusListing {
+  place: number;
+  record: WarRecord;
+}
+
+/** The ludus ranking by gloria: the top 50, plus `mine` wherever it stands. */
+export function useLudusRanking(mine: string | null | undefined) {
+  return useQuery({
+    queryKey: ['ludus', 'ranking', mine ?? null],
+    queryFn: async (): Promise<LudusRank[]> => {
+      if (isDemo) {
+        const all = [
+          ...DEMO_LUDI,
+          ...(demo.inLudus ? [{ ...demo.ludus, members: demo.ludus.members.length + 1 }] : []),
+        ].map((l) => ({
+          id: l.id,
+          name: l.name,
+          motto: l.motto,
+          members: l.members,
+          record: l.record,
+        }));
+        return all
+          .sort((a, b) => b.record.gloria - a.record.gloria || b.record.wins - a.record.wins)
+          .map((l, i) => ({ ...l, place: i + 1 }));
+      }
+      const rows = check(
+        await supabase.rpc('ludus_ranking', { p_ludus: mine ?? null }),
+      ) as (WarRecord & {
+        place: number;
+        id: string;
+        name: string;
+        motto: string;
+        members: number;
+      })[];
+      return rows.map(({ place, id, name, motto, members, ...record }) => ({
+        place: Number(place),
+        id,
+        name,
+        motto,
+        members: Number(members),
+        record,
+      }));
     },
   });
 }
@@ -573,6 +643,7 @@ export function useCreateLudus() {
           name: clean,
           motto,
           members: [],
+          record: EMPTY_RECORD,
         };
         demo.treasuries[`ludus:${demo.ludus.id}`] = 0;
         return;
@@ -794,6 +865,9 @@ export interface War {
   spoils: number | null;
   damaged_building: string | null;
   settled_at: string | null;
+  /** Gloria each side won or lost (null until settled). */
+  attacker_gloria: number | null;
+  defender_gloria: number | null;
 }
 
 function demoScoreWar(w: War): War {
@@ -814,16 +888,27 @@ function demoScoreWar(w: War): War {
   };
   if (new Date(w.ends_at) > new Date()) return scored;
   const attackerWins = scored.attacker_score > scored.defender_score;
+  const gloriaOf = (id: string) =>
+    (id === demo.ludus.id ? demo.ludus.record : DEMO_LUDI.find((l) => l.id === id)?.record)
+      ?.gloria ?? 0;
+  const [winner, loser] = attackerWins ? [w.attacker, w.defender] : [w.defender, w.attacker];
+  const [ws, ls] = attackerWins
+    ? [scored.attacker_score, scored.defender_score]
+    : [scored.defender_score, scored.attacker_score];
+  const g = gloriaChange(gloriaOf(winner.id), gloriaOf(loser.id), ws, ls);
   return {
     ...scored,
-    winner_id: attackerWins ? w.attacker.id : w.defender.id,
+    winner_id: winner.id,
     spoils: warSpoils(400),
     settled_at: w.ends_at,
+    attacker_gloria: attackerWins ? g.winner : g.loser,
+    defender_gloria: attackerWins ? g.loser : g.winner,
   };
 }
 
 /** Wars of a ludus, newest first, with live scores for the running one. Ended ones get settled. */
 export function useWars(ludusId: string | null | undefined) {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: ['wars', ludusId],
     enabled: !!ludusId,
@@ -846,6 +931,8 @@ export function useWars(ludusId: string | null | undefined) {
       if (ended.length) {
         await Promise.all(ended.map((w) => supabase.rpc('settle_war', { p_war: w.id })));
         rows = await load();
+        // Settling changed gloria, the record and the ranking.
+        void qc.invalidateQueries({ queryKey: ['ludus'] });
       }
       return Promise.all(
         rows.map(async (w) => {
@@ -906,6 +993,8 @@ export function useDeclareWar() {
           spoils: null,
           damaged_building: null,
           settled_at: null,
+          attacker_gloria: null,
+          defender_gloria: null,
         });
         return;
       }

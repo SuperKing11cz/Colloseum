@@ -25,7 +25,7 @@ import { LogoMark } from '@/components/Logo';
 import { QrCode } from '@/components/QrCode';
 import { SearchField } from '@/components/SearchField';
 import { Sheet } from '@/components/Sheet';
-import { LUDUS, WAR } from '@/lib/game/config';
+import { LAURELS, LUDUS, WAR } from '@/lib/game/config';
 import { currentLevel, timeLeftText } from '@/lib/game/fortress';
 import { formatKg } from '@/lib/formulas';
 import { useData } from '@/stores/data';
@@ -37,6 +37,7 @@ import {
   useJoinLudus,
   useLeaveLudus,
   useLudusDirectory,
+  useLudusRanking,
   useLudusRecords,
   useMyLudus,
   useRemoveMember,
@@ -46,6 +47,7 @@ import {
   type War,
 } from './api';
 import { FortressView } from './FortressView';
+import { GloriaRules, GloriaStats, LudusBadges, LudusRanking, WarHistory } from './GloriaViews';
 
 export function ludusLink(code: string): string {
   return Linking.createURL(`/ludus/${code}`);
@@ -75,6 +77,7 @@ function NoLudus() {
       </GlassCard>
       <FillButton label="Create a ludus" icon={Plus} onPress={() => setSheet('create')} />
       <FillButton label="Join with a code" icon={LogIn} onPress={() => setSheet('join')} />
+      <LudusRanking mine={null} />
       {sheet === 'create' ? <CreateSheet onClose={() => setSheet(null)} /> : null}
       {sheet === 'join' ? <JoinSheet onClose={() => setSheet(null)} /> : null}
     </View>
@@ -169,6 +172,7 @@ function MyLudus({ ludus }: { ludus: Ludus }) {
   const leave = useLeaveLudus();
   const remove = useRemoveMember();
   const wars = useWars(ludus.id);
+  const place = useLudusRanking(ludus.id).data?.find((r) => r.id === ludus.id)?.place ?? null;
   const temple = currentLevel(ludus.buildings.find((b) => b.building === 'temple'));
   const active = (wars.data ?? []).find((w) => !w.settled_at);
   const past = (wars.data ?? []).filter((w) => w.settled_at);
@@ -197,6 +201,7 @@ function MyLudus({ ludus }: { ludus: Ludus }) {
             onPress={() => setInvite(true)}
           />
         </View>
+        <GloriaStats record={ludus.record} place={place} />
         <Text style={[type.small, tabular]}>
           {ludus.members.length} of {ludus.limit} members · {ludus.treasury.toLocaleString('en-US')}{' '}
           denarii in the treasury
@@ -225,35 +230,10 @@ function MyLudus({ ludus }: { ludus: Ludus }) {
           }
         />
       )}
-      {past.length ? (
-        <ListGroup>
-          {past.slice(0, 5).map((w) => {
-            const won = w.winner_id === ludus.id;
-            const enemy = w.attacker.id === ludus.id ? w.defender : w.attacker;
-            return (
-              <ListRow
-                key={w.id}
-                height={56}
-                chevron={false}
-                title={`${won ? 'Won' : 'Lost'} against ${enemy.name}`}
-                subtitle={
-                  won
-                    ? `+${w.spoils ?? 0} denarii, +30 laurels each`
-                    : w.damaged_building
-                      ? `${w.damaged_building} damaged`
-                      : 'Nothing damaged'
-                }
-                right={
-                  <Text style={[type.bodyStrong, tabular, won && { color: colors.accent }]}>
-                    {formatKg(w.attacker.id === ludus.id ? w.attacker_score : w.defender_score)} :{' '}
-                    {formatKg(w.attacker.id === ludus.id ? w.defender_score : w.attacker_score)}
-                  </Text>
-                }
-              />
-            );
-          })}
-        </ListGroup>
-      ) : null}
+      <WarHistory wars={past} mine={ludus.id} />
+
+      <SectionHeader title="Badges" />
+      <LudusBadges record={ludus.record} />
 
       <SectionHeader
         title="Members"
@@ -320,6 +300,9 @@ function MyLudus({ ludus }: { ludus: Ludus }) {
         extra={temple ? <HallOfRecords ludusId={ludus.id} /> : undefined}
       />
 
+      <LudusRanking mine={ludus.id} />
+      <GloriaRules />
+
       <TextButton
         label="Leave the ludus"
         style={{ alignSelf: 'center', minHeight: 44, justifyContent: 'center' }}
@@ -385,7 +368,7 @@ function WarSheet({ ludus, onClose }: { ludus: Ludus; onClose: () => void }) {
     if (
       await confirm({
         title: `Declare war on ${target.name}?`,
-        message: `For ${WAR.days} days, verified workouts at the gym score points (${WAR.perWorkout} each, +${WAR.pr} per PR, +${WAR.perDay} per day). Points are divided by active members, so size does not decide. The winner takes up to ${WAR.maxSpoils} denarii and 30 laurels each; one of the loser's buildings gets damaged.`,
+        message: `For ${WAR.days} days, verified workouts at the gym score points (${WAR.perWorkout} each, +${WAR.pr} per PR, +${WAR.perDay} per day). Points are divided by active members, so size does not decide. The winner takes up to ${WAR.maxSpoils} denarii, ${LAURELS.warWin} laurels each and gloria; one of the loser's buildings gets damaged.`,
         confirmLabel: 'Declare war',
       })
     )

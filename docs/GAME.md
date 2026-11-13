@@ -148,6 +148,24 @@ The ludus and the gym (tribe) each have a fortress. Any member can start a build
 - **The winner** takes 20 % of the loser's treasury (at most 300) and every member gets +30 laurels. **The loser** gets one building damaged. A tie goes to the defender.
 - Settled by whoever opens the war after it ends (no cron).
 
+### Gloria, the record and ludus badges
+
+- **Gloria** is the ludus's lasting fame. It never resets and never drops below 0.
+  - **Win:** +30, plus +1 for every 10 gloria the loser had more than the winner (at most +30 more).
+  - **Loss:** −10, or nothing after a close fight (at least 90 % of the winner's score).
+- **Record:** wins, losses, attacks beaten (won as defender), giants slain (won against more gloria), the current and the longest run of wins.
+- **Ludus ranking** by gloria (then wins): Arena → Ludus, the top 10 with your own ludus, "See all" for the top 50. Tap a ludus to see its record and badges.
+- **War history:** the last 5 wars with the gloria won or lost, "All wars" for the rest.
+- **Ludus badges** (earned by the crew, shown on the ludus and in the ranking):
+
+| Badge | Counts | Tiers |
+|---|---|---|
+| Victories | wars won | 1, 5, 10, 25, 50 |
+| Unbroken | longest run of wins | 3, 5, 10 |
+| Iron wall | attacks beaten | 1, 5, 10, 25 |
+| Giant slayer | wins against a ludus with more gloria | 1, 3, 10 |
+| Gloria | the most gloria reached | 100, 250, 500, 1000, 2000 |
+
 ## 7. Duels and Bellum
 
 - **Duel:** challenge a friend for 7 days from the moment they accept: **most workouts** or **most kg added** to one lift's e1RM. The winner gets +25 laurels; a tie gives nothing.
@@ -181,14 +199,14 @@ Tables (`supabase/updates/2026-11-13-game.sql`, also in `schema.sql`):
 | `laurel_awards` | laurels from duels, wars, Bellum | signed-in users | server functions only |
 | `gym_secrets` | the HMAC key per gym | nobody (functions only) | functions |
 | `gym_visits` | check-in/out scans, position, server-set `in_ok`, `out_ok` (status follows from the times) | owner only | owner (scans); the trigger sets the checks |
-| `ludi`, `ludus_members` | crews and who is in them | signed-in users | functions (`create_ludus`, `join_ludus`, `leave_ludus`, `remove_member`) |
+| `ludi`, `ludus_members` | crews and who is in them; gloria and the war record on `ludi` (set by `settle_war()` only) | signed-in users | functions (`create_ludus`, `join_ludus`, `leave_ludus`, `remove_member`) |
 | `treasuries`, `treasury_gifts` | balance per ludus/gym, gifts | members | `donate()` |
 | `buildings` | level, target level, ready at, damaged | signed-in users | `start_building()`, `repair_building()` |
-| `ludus_wars` | the two sides, window, member counts, result | signed-in users | `declare_war()`, `settle_war()` |
+| `ludus_wars` | the two sides, window, member counts, result, gloria won or lost per side | signed-in users | `declare_war()`, `settle_war()` |
 | `duels` | challenger, opponent, kind, exercise, window, result | the two players | `create_duel()`, `answer_duel()`, `settle_duel()` |
 | `bellum_results` | a city's month: gym, score, place | signed-in users | `settle_bellum()` |
 
-The temple's hall of records comes from `ludus_records()` (best squat, bench and deadlift e1RM of the members).
+The temple's hall of records comes from `ludus_records()` (best squat, bench and deadlift e1RM of the members). The ludus ranking comes from `ludus_ranking()`.
 
 - Gym positions (`gyms.lat`, `gyms.lng`) are set by the gym's manager. Visit positions are visible to their owner only.
 - Bodyweight never leaves `bodyweight_logs`. DOTS for laurels and Strength is computed on the user's own device; the server's DOTS (leaderboards) reads the weight only to compute the score and never returns it.

@@ -8,6 +8,17 @@ import type { Release } from '@/lib/changelog';
 
 export const CHANGELOG: Release[] = [
   {
+    id: '2026-11-13b',
+    date: '2026-11-13',
+    title: 'Glory for your ludus',
+    items: [
+      'Gloria: every war your ludus wins makes it more famous, more for beating a stronger ludus. It never resets.',
+      'The ludus ranking in Arena → Ludus. Tap any ludus to see its wins, losses and badges.',
+      'Ludus badges the crew earns together: Victories, Unbroken, Iron wall, Giant slayer and Gloria.',
+      'The full war history of your ludus, with the gloria each war brought.',
+    ],
+  },
+  {
     id: '2026-11-13',
     date: '2026-11-13',
     title: 'Become a gladiator',

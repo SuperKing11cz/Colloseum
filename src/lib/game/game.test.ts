@@ -11,6 +11,7 @@ import {
   workingLevel,
   type Building,
 } from './fortress';
+import { applyWar, EMPTY_RECORD, gloriaChange, ludusBadges } from './gloria';
 import {
   carryOver,
   leagueFor,
@@ -384,6 +385,43 @@ describe('battles', () => {
   it('needs 3 active members for Bellum', () => {
     expect(bellumScore(20, 2)).toBe(null);
     expect(bellumScore(30, 3)).toBe(10);
+  });
+});
+
+describe('gloria', () => {
+  it('rewards wins, more against a stronger ludus', () => {
+    expect(gloriaChange(0, 0, 40, 20)).toEqual({ winner: 30, loser: 0 });
+    expect(gloriaChange(100, 250, 40, 20)).toEqual({ winner: 45, loser: -10 });
+    expect(gloriaChange(0, 900, 40, 20).winner).toBe(60);
+  });
+  it('costs nothing after a close loss', () => {
+    expect(gloriaChange(50, 80, 40, 36).loser).toBe(0);
+    expect(gloriaChange(50, 80, 40, 35).loser).toBe(-10);
+    expect(gloriaChange(0, 0, 0, 0).loser).toBe(0);
+  });
+  it('keeps the record and streaks', () => {
+    let r = applyWar(EMPTY_RECORD, true, true, false, 30);
+    r = applyWar(r, true, false, true, 45);
+    r = applyWar(r, false, false, false, -10);
+    expect(r).toEqual({
+      gloria: 65,
+      best_gloria: 75,
+      wins: 2,
+      losses: 1,
+      defences: 1,
+      upsets: 1,
+      streak: 0,
+      best_streak: 2,
+    });
+    expect(applyWar(EMPTY_RECORD, false, false, false, -10).gloria).toBe(0);
+  });
+  it('earns ludus badges from the record', () => {
+    const b = ludusBadges({ ...EMPTY_RECORD, wins: 6, best_gloria: 120 });
+    const wins = b.find((x) => x.def.id === 'ludus-wins')!;
+    expect(wins.earned.map((e) => e.threshold)).toEqual([1, 5]);
+    expect(wins.next).toBe(10);
+    expect(b.find((x) => x.def.id === 'ludus-gloria')!.earned).toHaveLength(1);
+    expect(b.find((x) => x.def.id === 'ludus-walls')!.earned).toHaveLength(0);
   });
 });
 

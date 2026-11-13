@@ -621,14 +621,59 @@ export const DEMO_LUDUS = {
   code: 'FRM7QX',
   members: ['tomas', 'adam', 'jakub', 'filip'],
   treasury: 640,
+  record: {
+    gloria: 185,
+    best_gloria: 195,
+    wins: 6,
+    losses: 2,
+    defences: 2,
+    upsets: 1,
+    streak: 2,
+    best_streak: 4,
+  },
 };
 
 /** Other ludi to look at and fight. */
+const warRecord = (
+  gloria: number,
+  best_gloria: number,
+  wins: number,
+  losses: number,
+  defences: number,
+  upsets: number,
+  streak: number,
+  best_streak: number,
+) => ({ gloria, best_gloria, wins, losses, defences, upsets, streak, best_streak });
+
 export const DEMO_LUDI = [
-  { id: sid('ludus:lupi'), name: 'Lupi Romani', motto: 'The pack trains together', members: 6 },
-  { id: sid('ludus:aquila'), name: 'Aquila', motto: 'Higher every week', members: 4 },
-  { id: sid('ludus:ursi'), name: 'Ursi', motto: 'Heavy and happy', members: 7 },
-  { id: sid('ludus:vulpes'), name: 'Vulpes', motto: '', members: 3 },
+  {
+    id: sid('ludus:lupi'),
+    name: 'Lupi Romani',
+    motto: 'The pack trains together',
+    members: 6,
+    record: warRecord(260, 280, 9, 3, 3, 2, 1, 5),
+  },
+  {
+    id: sid('ludus:aquila'),
+    name: 'Aquila',
+    motto: 'Higher every week',
+    members: 4,
+    record: warRecord(95, 120, 4, 4, 1, 1, 0, 2),
+  },
+  {
+    id: sid('ludus:ursi'),
+    name: 'Ursi',
+    motto: 'Heavy and happy',
+    members: 7,
+    record: warRecord(140, 140, 5, 2, 2, 0, 3, 3),
+  },
+  {
+    id: sid('ludus:vulpes'),
+    name: 'Vulpes',
+    motto: '',
+    members: 3,
+    record: warRecord(0, 0, 0, 1, 0, 0, 0, 0),
+  },
 ];
 
 /** Gyms of the demo user's city in this month's Bellum: active members and verified visit days. */
