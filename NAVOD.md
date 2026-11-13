@@ -127,3 +127,4 @@ Když přidám do aplikace něco, co potřebuje změnu v Supabase, najdeš to ve
 - `2026-10-23-favorites.sql` – oblíbené cviky
 - `2026-10-23-badges.sql` – odznaky (vidí je přátelé a lidé z gymu)
 - `2026-11-13-gloria.sql` – věhlas ludu (Gloria), bilance válek, odznaky ludu a žebříček ludů
+- `2026-11-13-war-two-members.sql` – do války stačí 2 členové ludu (místo 3)

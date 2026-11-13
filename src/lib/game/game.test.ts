@@ -366,7 +366,8 @@ describe('battles', () => {
     ).toBe(25);
   });
   it('divides by active members and helps the defender', () => {
-    expect(warScore(90, 2)).toBe(30);
+    expect(warScore(90, 1)).toBe(45);
+    expect(warScore(90, 3)).toBe(30);
     expect(warScore(90, 3, 2)).toBe(33);
     expect(warWinner(10, 10)).toBe('defender');
     expect(warSpoils(5000)).toBe(300);

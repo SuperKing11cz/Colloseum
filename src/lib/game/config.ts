@@ -73,7 +73,8 @@ export const VISIT = {
 } as const;
 
 export const LUDUS = {
-  minMembers: 3,
+  /** Members a ludus needs to fight; also the least a war score is divided by. */
+  minMembers: 2,
   baseMembers: 5,
   maxMembers: 10,
   nameMax: 24,

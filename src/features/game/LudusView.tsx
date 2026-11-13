@@ -1,5 +1,5 @@
 /**
- * Arena → Ludus: your crew of 3–10 (any gyms). Create or join one; then the crew, its wars and
+ * Arena → Ludus: your crew of 2–10 (any gyms). Create or join one; then the crew, its wars and
  * its fortress. The leader declares wars and can remove members.
  */
 import * as Linking from 'expo-linking';

@@ -8,6 +8,12 @@ import type { Release } from '@/lib/changelog';
 
 export const CHANGELOG: Release[] = [
   {
+    id: '2026-11-13c',
+    date: '2026-11-13',
+    title: 'Smaller crews can fight',
+    items: ['A ludus of 2 can declare war now, and be attacked. Points still count per member.'],
+  },
+  {
     id: '2026-11-13b',
     date: '2026-11-13',
     title: 'Glory for your ludus',

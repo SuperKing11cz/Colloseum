@@ -15,7 +15,7 @@ An RPG layer on top of the tracker, inspired by Gladiatus (XP and ranks), Clash 
 | **XP** | Experience. Never resets. Sets the **level** and the **rank**. |
 | **Laurels** | Season points. Set the **league**. Partly reset every month. |
 | **Denarii** | Coins. Earned by training, given to a ludus or gym treasury to build. |
-| **Ludus** | A crew of 3–10 people (friends, any gyms). Builds a fortress, fights wars. |
+| **Ludus** | A crew of 2–10 people (friends, any gyms). Builds a fortress, fights wars. |
 | **Tribe** | Everyone whose home gym is the same gym. Builds the gym fortress, fights Bellum. |
 | **Verified workout** | A workout inside a gym visit checked in and out with the gym's QR code and GPS. |
 
@@ -105,7 +105,7 @@ A visit proves you were at the gym.
 ## 4. Ludus and denarii
 
 - **Tribe** = everyone with the same home gym. Nothing to join.
-- **Ludus** = a crew of up to 5 people to start (barracks raise it to 10), across any gyms. It needs 3 members to fight. Create one with a name and a motto, invite with a code, link or QR. One ludus per person. Whoever creates it leads it; if the leader leaves, the longest member takes over; the last one out closes it.
+- **Ludus** = a crew of up to 5 people to start (barracks raise it to 10), across any gyms. It needs 2 members to fight. Create one with a name and a motto, invite with a code, link or QR. One ludus per person. Whoever creates it leads it; if the leader leaves, the longest member takes over; the last one out closes it.
 
 **Denarii** per qualifying workout:
 
@@ -141,9 +141,9 @@ The ludus and the gym (tribe) each have a fortress. Any member can start a build
 
 ## 6. Ludus wars
 
-- The leader **declares war** on another ludus. Both need 3+ members, neither can be at war, and the same two can't fight twice in 7 days. The war runs **3 days** from the declaration.
+- The leader **declares war** on another ludus. Both need 2+ members, neither can be at war, and the same two can't fight twice in 7 days. The war runs **3 days** from the declaration.
 - **Points** come only from **verified workouts** in the window: 10 per workout (2 a day at most), +5 per PR (3 at most), +5 per day trained.
-- **Per active member:** each side's points are divided by its active members at the start (trained in the 14 days before, at least 3), so a small crew can beat a big one.
+- **Per active member:** each side's points are divided by its active members at the start (trained in the 14 days before, at least 2), so a small crew can beat a big one.
 - **Defender** gets the palisade bonus.
 - **The winner** takes 20 % of the loser's treasury (at most 300) and every member gets +30 laurels. **The loser** gets one building damaged. A tie goes to the defender.
 - Settled by whoever opens the war after it ends (no cron).

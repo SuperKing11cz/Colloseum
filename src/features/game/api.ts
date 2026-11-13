@@ -974,8 +974,9 @@ export function useDeclareWar() {
         if (wars.some((w) => !w.settled_at)) throw new Error('One of you is at war already');
         const l = demoLudus();
         if (!l || l.members.length < LUDUS.minMembers)
-          throw new Error('Your ludus needs 3 members to fight');
-        if (target.members < LUDUS.minMembers) throw new Error('They need 3 members to fight');
+          throw new Error(`Your ludus needs ${LUDUS.minMembers} members to fight`);
+        if (target.members < LUDUS.minMembers)
+          throw new Error(`They need ${LUDUS.minMembers} members to fight`);
         wars.unshift({
           id: stableUuid(`war:${target.id}:${Date.now()}`),
           attacker: { id: l.id, name: l.name },

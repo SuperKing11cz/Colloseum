@@ -5,7 +5,7 @@
  */
 import { toLocalDate } from '../dates';
 import { e1rm } from '../formulas';
-import { BELLUM, WAR } from './config';
+import { BELLUM, LUDUS, WAR } from './config';
 import { qualifies, workingSets } from './engine';
 import type { Session } from '../types';
 
@@ -29,9 +29,9 @@ export function warPoints(workouts: WarWorkout[]): number {
   return points;
 }
 
-/** Points per active member (at least 3), with the defender's palisade bonus. */
+/** Points per active member (at least 2), with the defender's palisade bonus. */
 export function warScore(points: number, activeMembers: number, palisade = 0): number {
-  const per = points / Math.max(3, activeMembers);
+  const per = points / Math.max(LUDUS.minMembers, activeMembers);
   return Math.round(per * (1 + WAR.wallBonus * palisade) * 10) / 10;
 }
 
