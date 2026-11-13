@@ -1,0 +1,282 @@
+import { Plus, type LucideIcon } from '@/components/icons';
+import { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { FillButton } from '@/components/Buttons';
+import { FieldHint, FormField, FormGroup } from '@/components/Form';
+import { ListGroup, ListRow } from '@/components/List';
+import { SearchField } from '@/components/SearchField';
+import { Chip } from '@/components/Segmented';
+import { Sheet } from '@/components/Sheet';
+import { cleanExerciseName } from '@/lib/exerciseName';
+import { favoritesFirst } from '@/lib/favorites';
+import type { NextPick } from '@/lib/nextExercise';
+import { searchExercises } from '@/lib/search';
+import type { Exercise } from '@/lib/types';
+import { uuid } from '@/lib/uuid';
+import { useData } from '@/stores/data';
+import { accentA, colors, type } from '@/theme/tokens';
+import { FavoriteButton } from './FavoriteButton';
+
+const GROUPS: Record<string, string[]> = {
+  Chest: ['chest', 'upper chest'],
+  Back: ['back', 'upper back', 'lower back', 'traps', 'rear delts', 'neck'],
+  Shoulders: ['shoulders', 'rear delts'],
+  Arms: ['biceps', 'triceps', 'forearms'],
+  Legs: ['quads', 'glutes', 'hamstrings', 'calves', 'adductors', 'abductors'],
+  Core: ['core', 'grip', 'hip flexors'],
+  Cardio: ['cardio'],
+};
+
+const TIER_RANK = { S: 0, A: 1, B: 2 } as const;
+/** The Favorites chip, next to the muscle groups. */
+const FAVORITES = 'favorites';
+/** Stable default, so the lists are not rebuilt on every render. */
+const NO_SUGGESTIONS: NextPick[] = [];
+const BROWSE_LIMIT = 80;
+
+/** Small "S" / "A" / "B" badge: the exercise's rating. */
+export function TierBadge({ tier }: { tier: 'S' | 'A' | 'B' }) {
+  return (
+    <View
+      style={[styles.badge, tier === 'S' && { backgroundColor: accentA(0.12) }]}
+      accessibilityLabel={`${tier} tier`}
+    >
+      <Text style={[styles.badgeText, tier === 'S' && { color: colors.accent }]}>{tier}</Text>
+    </View>
+  );
+}
+
+export function musclesLabel(muscles: string[]): string {
+  const s = muscles.join(', ');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Search, muscle filter and "Create custom exercise". In a workout, `suggested` (what usually
+ * comes next) sits at the top of All, under its own heading, and the picker opens there.
+ */
+export function ExercisePicker({
+  visible,
+  onClose,
+  onPick,
+  title = 'Add exercise',
+  pickIcon: PickIcon = Plus,
+  suggested = NO_SUGGESTIONS,
+  suggestedLabel = 'Suggested',
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onPick: (exerciseId: string) => void;
+  title?: string;
+  pickIcon?: LucideIcon;
+  suggested?: NextPick[];
+  suggestedLabel?: string;
+}) {
+  const exercises = useData((s) => s.exercises);
+  const prefs = useData((s) => s.exercisePrefs);
+  const userId = useData((s) => s.userId);
+  const saveExercise = useData((s) => s.saveExercise);
+  const [creating, setCreating] = useState(false);
+  const [q, setQ] = useState('');
+  const [group, setGroup] = useState<string | null>(null);
+  const hasFavorites = useMemo(() => Object.values(prefs).some((p) => p.favorite), [prefs]);
+  // Every time the picker opens it starts fresh: empty search, on "All" when it has suggestions,
+  // otherwise on Favorites when there are any.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) {
+      setQ('');
+      setGroup(!suggested.length && hasFavorites ? FAVORITES : null);
+      setCreating(false);
+    }
+  }
+  const [name, setName] = useState('');
+  const [muscles, setMuscles] = useState('');
+
+  const all = useMemo(() => Object.values(exercises), [exercises]);
+  const { picks, list, total } = useMemo(() => {
+    const isFavorite = (id: string) => !!prefs[id]?.favorite;
+    const inGroup =
+      group === FAVORITES
+        ? all.filter((e) => isFavorite(e.id))
+        : group
+          ? all.filter((e) => e.muscles.some((m) => GROUPS[group].includes(m)))
+          : all;
+    if (q.trim())
+      return {
+        picks: [],
+        list: favoritesFirst(searchExercises(q, inGroup, 60), isFavorite, q),
+        total: inGroup.length,
+      };
+    // Suggestions head "All" and are not repeated below it.
+    const picks = group
+      ? []
+      : suggested.flatMap((s) => {
+          const e = exercises[s.exerciseId];
+          return e ? [{ exercise: e, reason: s.reason }] : [];
+        });
+    const pinned = new Set(picks.map((p) => p.exercise.id));
+    const rest = inGroup.filter((e) => !pinned.has(e.id));
+    // Browsing: favorites, your own exercises, the S / A / B tier picks, then the rest A–Z.
+    const rank = (e: Exercise) =>
+      isFavorite(e.id) ? -2 : e.created_by ? -1 : e.tier ? TIER_RANK[e.tier] : 3;
+    const sorted = rest.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+    return { picks, list: sorted.slice(0, BROWSE_LIMIT), total: sorted.length };
+  }, [all, q, group, prefs, suggested, exercises]);
+
+  const pick = (id: string) => {
+    onPick(id);
+    setQ('');
+    onClose();
+  };
+
+  const row = (e: Exercise, subtitle: string) => (
+    <ListRow
+      key={e.id}
+      height={54}
+      title={e.name}
+      subtitle={subtitle}
+      chevron={false}
+      rightInteractive
+      right={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {e.tier ? <TierBadge tier={e.tier} /> : null}
+          <FavoriteButton exerciseId={e.id} name={e.name} size={18} />
+          <PickIcon size={18} color={colors.accent} strokeWidth={2.4} />
+        </View>
+      }
+      onPress={() => pick(e.id)}
+    />
+  );
+
+  if (creating) {
+    const trimmed = name.trim();
+    const exists = Object.values(exercises).some(
+      (e) => e.name.toLowerCase() === cleanExerciseName(trimmed).toLowerCase(),
+    );
+    return (
+      <Sheet
+        visible={visible}
+        onClose={() => setCreating(false)}
+        title="Custom exercise"
+        doneLabel="Create"
+        doneDisabled={trimmed.length < 2 || exists}
+        onDone={() => {
+          const e: Exercise = {
+            id: uuid(),
+            name: cleanExerciseName(trimmed),
+            muscles: muscles
+              .split(',')
+              .map((m) => m.trim().toLowerCase())
+              .filter(Boolean),
+            image_key: null,
+            created_by: userId,
+          };
+          saveExercise(e);
+          setCreating(false);
+          setName('');
+          setMuscles('');
+          pick(e.id);
+        }}
+      >
+        <FormGroup>
+          <FormField
+            label="Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Cable row"
+            autoFocus
+          />
+          <FormField
+            label="Muscles"
+            value={muscles}
+            onChangeText={setMuscles}
+            placeholder="back, biceps"
+            autoCapitalize="none"
+          />
+        </FormGroup>
+        {exists ? <FieldHint text="An exercise with this name already exists." error /> : null}
+      </Sheet>
+    );
+  }
+
+  return (
+    <Sheet visible={visible} onClose={onClose} title={title}>
+      <SearchField placeholder="Search exercises" value={q} onChangeText={setQ} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
+        <Chip label="All" selected={!group} onPress={() => setGroup(null)} />
+        <Chip
+          label="★ Favorites"
+          selected={group === FAVORITES}
+          onPress={() => setGroup(group === FAVORITES ? null : FAVORITES)}
+        />
+        {Object.keys(GROUPS).map((g) => (
+          <Chip
+            key={g}
+            label={g}
+            selected={group === g}
+            onPress={() => setGroup(group === g ? null : g)}
+          />
+        ))}
+      </ScrollView>
+      {picks.length > 0 ? (
+        <>
+          <Text style={[type.captionStrong, styles.heading, { color: colors.accent }]}>
+            {suggestedLabel}
+          </Text>
+          <ListGroup>{picks.map((p) => row(p.exercise, p.reason))}</ListGroup>
+          <Text style={[type.captionStrong, styles.heading]}>All exercises</Text>
+        </>
+      ) : null}
+      {list.length > 0 ? (
+        <ListGroup>
+          {list.map((e) => row(e, musclesLabel(e.muscles) + (e.created_by ? ' · custom' : '')))}
+        </ListGroup>
+      ) : (
+        <View style={{ paddingVertical: 12 }}>
+          <Text style={[type.caption, { textAlign: 'center' }]}>
+            {group === FAVORITES && !q.trim()
+              ? 'No favorites yet. Tap the star next to an exercise to add it here.'
+              : 'No exercises found.'}
+          </Text>
+        </View>
+      )}
+      {!q.trim() && total > list.length ? (
+        <Text style={[type.small, { textAlign: 'center' }]}>
+          Showing the top {list.length} of {total.toLocaleString('en-US')}. Type to search them all.
+        </Text>
+      ) : null}
+      <Text style={[type.small, { textAlign: 'center' }]}>
+        S / A / B = exercise rating, S is best.
+      </Text>
+      <FillButton
+        label="Create custom exercise"
+        icon={Plus}
+        onPress={() => {
+          setName(q);
+          setCreating(true);
+        }}
+      />
+    </Sheet>
+  );
+}
+
+const styles = StyleSheet.create({
+  heading: { paddingHorizontal: 4 },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    backgroundColor: colors.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontSize: 12, fontWeight: '700', color: colors.text2 },
+});

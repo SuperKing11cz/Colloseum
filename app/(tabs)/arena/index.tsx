@@ -1,0 +1,237 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { Check, ChevronDown, Users } from '@/components/icons';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { FillButton, IconButton, TextButton } from '@/components/Buttons';
+import { ListGroup, ListRow, SectionHeader } from '@/components/List';
+import { Header, Screen } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
+import { Sheet } from '@/components/Sheet';
+import { MyGym } from '@/features/arena/MyGym';
+import { useGymManager } from '@/features/game/api';
+import { BellumView } from '@/features/game/BellumView';
+import { DuelsView } from '@/features/game/DuelsView';
+import { LeagueView } from '@/features/game/LeagueView';
+import { LudusView } from '@/features/game/LudusView';
+import { TourTarget } from '@/features/onboarding/TourTarget';
+import { Ranks, ScopeTabs } from '@/features/arena/Ranks';
+import { useCheckIn, useFriends, useGym, useMyCheckin } from '@/features/social/api';
+import { TogetherFeed } from '@/features/together/TogetherViews';
+import { useData } from '@/stores/data';
+import { usePrefs, type ArenaMode, type ArenaPeriod } from '@/stores/prefs';
+import { toast } from '@/stores/ui';
+import { colors, type } from '@/theme/tokens';
+
+const MODES: { value: ArenaMode; label: string }[] = [
+  { value: 'ranks', label: 'Ranks' },
+  { value: 'league', label: 'League' },
+  { value: 'ludus', label: 'Ludus' },
+  { value: 'duels', label: 'Duels' },
+  { value: 'bellum', label: 'Bellum' },
+];
+const GAME_ABOVE: Record<ArenaMode, string> = {
+  ranks: '',
+  league: '',
+  ludus: 'Your crew and its fortress',
+  duels: 'One on one with friends',
+  bellum: 'Gym against gym',
+};
+const isMode = (m: unknown): m is ArenaMode => MODES.some((x) => x.value === m);
+
+const PERIODS: { value: ArenaPeriod; label: string }[] = [
+  { value: 'week', label: 'This week' },
+  { value: 'month', label: 'This month' },
+  { value: 'all', label: 'All time' },
+];
+
+export default function Arena() {
+  const scope = usePrefs((s) => s.arenaScope);
+  const setScope = usePrefs((s) => s.setArenaScope);
+  const profile = useData((s) => s.profile);
+  const friends = useFriends();
+  const friendCount = friends.data?.friends.length ?? 0;
+  const incoming = friends.data?.incoming.length ?? 0;
+  const gymId = profile?.home_gym_id ?? null;
+  const gym = useGym(gymId);
+  const mode = usePrefs((s) => s.arenaMode);
+  const setMode = usePrefs((s) => s.setArenaMode);
+  // ?mode=league (Today's season card) opens a section, also when the Arena is already open.
+  const { mode: asked } = useLocalSearchParams<{ mode?: string }>();
+  const [lastAsked, setLastAsked] = useState<string | undefined>(undefined);
+  if (asked !== lastAsked) {
+    setLastAsked(asked);
+    if (isMode(asked)) setMode(asked);
+  }
+  const scoped = mode === 'ranks' || mode === 'league';
+
+  const above = !scoped
+    ? GAME_ABOVE[mode]
+    : scope === 'friends'
+      ? `${friendCount} friend${friendCount === 1 ? '' : 's'}`
+      : scope === 'gym'
+        ? gym.data?.gym
+          ? `${gym.data.gym.name} · ${gym.data.members} member${gym.data.members === 1 ? '' : 's'}`
+          : 'No home gym'
+        : 'Everyone who joined';
+
+  return (
+    <Screen glow="center" glowTop={260} gap={16}>
+      <Header
+        above={above}
+        title="Arena"
+        right={
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <View>
+              <IconButton
+                icon={Users}
+                accessibilityLabel={incoming ? `Friends, ${incoming} requests` : 'Friends'}
+                onPress={() => router.push('/arena/friends')}
+              />
+              {incoming > 0 ? <View style={styles.badge} /> : null}
+            </View>
+            {mode === 'ranks' ? <PeriodMenu /> : null}
+          </View>
+        }
+      />
+      <TourTarget id="arena-modes">
+        <Segmented
+          options={MODES}
+          value={mode}
+          onChange={setMode}
+          height={34}
+          accessibilityLabel="Arena sections"
+        />
+      </TourTarget>
+      {scoped ? (
+        <TourTarget id="arena-scopes" style={{ alignSelf: 'flex-start' }}>
+          <ScopeTabs value={scope} onChange={setScope} />
+        </TourTarget>
+      ) : null}
+      {mode === 'league' ? (
+        <LeagueView scope={scope} />
+      ) : mode === 'ludus' ? (
+        <LudusView />
+      ) : mode === 'duels' ? (
+        <DuelsView />
+      ) : mode === 'bellum' ? (
+        <BellumView />
+      ) : scope === 'gym' && !gymId ? (
+        <MyGym gymId={null} />
+      ) : (
+        <>
+          <Ranks scope={scope} friendCount={friends.isLoading ? 1 : friendCount} />
+          {scope === 'gym' && gymId ? (
+            <View style={{ gap: 10, marginTop: 8 }}>
+              <SectionHeader title="In your gym" right={<CheckInButton gymId={gymId} />} />
+              <MyGym gymId={gymId} />
+              <PosterLink gymId={gymId} />
+            </View>
+          ) : null}
+          {scope !== 'global' ? <TogetherFeed /> : null}
+        </>
+      )}
+    </Screen>
+  );
+}
+
+function PeriodMenu() {
+  const period = usePrefs((s) => s.arenaPeriod);
+  const setPeriod = usePrefs((s) => s.setArenaPeriod);
+  const [open, setOpen] = useState(false);
+  const label = PERIODS.find((p) => p.value === period)?.label ?? 'This week';
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Change period, ${label}`}
+        onPress={() => setOpen(true)}
+        style={styles.period}
+      >
+        <Text style={[type.bodyStrong]}>{label}</Text>
+        <ChevronDown size={12} color={colors.text} strokeWidth={3} />
+      </Pressable>
+      <Sheet visible={open} onClose={() => setOpen(false)} title="Period">
+        <ListGroup>
+          {PERIODS.map((p) => (
+            <ListRow
+              key={p.value}
+              height={50}
+              title={p.label}
+              chevron={false}
+              right={
+                p.value === period ? (
+                  <Check size={18} color={colors.accent} strokeWidth={2.6} />
+                ) : null
+              }
+              onPress={() => {
+                setPeriod(p.value);
+                setOpen(false);
+              }}
+            />
+          ))}
+        </ListGroup>
+      </Sheet>
+    </>
+  );
+}
+
+/** The gym's manager prints the QR poster members scan to check in and out. */
+function PosterLink({ gymId }: { gymId: string }) {
+  const manager = useGymManager(gymId);
+  if (!manager.data) return null;
+  return (
+    <TextButton
+      label="QR poster for the gym"
+      accent
+      style={{ alignSelf: 'center', minHeight: 44, justifyContent: 'center' }}
+      onPress={() => router.push({ pathname: '/gym-poster', params: { gymId } })}
+    />
+  );
+}
+
+function CheckInButton({ gymId }: { gymId: string }) {
+  const mine = useMyCheckin();
+  const checkIn = useCheckIn();
+  const checked = !!mine.data;
+  return (
+    <FillButton
+      size="sm"
+      label={checked ? 'Checked in' : 'Check in'}
+      icon={checked ? Check : undefined}
+      disabled={checkIn.isPending}
+      accessibilityState={{ selected: checked }}
+      onPress={() => {
+        if (checked) {
+          toast('You are checked in for 2 hours');
+          return;
+        }
+        checkIn.mutate(gymId, { onError: (e) => toast(e.message) });
+      }}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  period: {
+    height: 36,
+    paddingLeft: 14,
+    paddingRight: 12,
+    borderRadius: 18,
+    backgroundColor: colors.fill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  badge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+    borderWidth: 1.5,
+    borderColor: colors.bg,
+  },
+});

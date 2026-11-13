@@ -1,0 +1,194 @@
+# Colosseum — the game layer
+
+An RPG layer on top of the tracker, inspired by Gladiatus (XP and ranks), Clash Royale (leagues and seasons) and Tribal Wars (building a fortress together, wars).
+
+**The one rule:** everything is earned by real training. Nothing is bought, nothing grows while you rest, and **XP is never given for volume** (kg × reps), so padding a workout with junk sets earns nothing.
+
+- All numbers below live in `src/lib/game/config.ts`. They are a first pass to tune with real use.
+- The formulas are small pure functions in `src/lib/game/` with unit tests.
+- The design system is unchanged: white glass, grey pills, red only for progress, PRs and highlights.
+
+## Glossary
+
+| Word | Meaning |
+|---|---|
+| **XP** | Experience. Never resets. Sets the **level** and the **rank**. |
+| **Laurels** | Season points. Set the **league**. Partly reset every month. |
+| **Denarii** | Coins. Earned by training, given to a ludus or gym treasury to build. |
+| **Ludus** | A crew of 3–10 people (friends, any gyms). Builds a fortress, fights wars. |
+| **Tribe** | Everyone whose home gym is the same gym. Builds the gym fortress, fights Bellum. |
+| **Verified workout** | A workout inside a gym visit checked in and out with the gym's QR code and GPS. |
+
+## What counts as a workout
+
+A **qualifying workout** is a finished workout with at least **3 done working sets** (warm-ups don't count). Only qualifying workouts earn anything.
+
+## 1. XP and ranks
+
+Per qualifying workout:
+
+| Source | XP |
+|---|---|
+| Workout | 100 |
+| Verified at the gym (QR) | +25 (an incomplete visit: +12) |
+| PR | +30 each, at most 3 per workout |
+| Week streak | +10 per week of the current streak, at most +50 |
+| Trained together (confirmed) | +20 |
+
+- **Daily cap:** 300 XP per day. A second or third workout that day only fills what is left.
+- **No XP for volume, sets or reps.**
+- **Unusual PR jumps** (see Anti-cheat) give no PR reward.
+- XP is computed from the whole history, so existing users start with the level they earned.
+
+**Levels.** Reaching level L takes `50·(L−1)² + 100·(L−1)` XP in total: level 2 after one workout, level 10 after ~5 000 XP (about 3 months at 3 workouts a week), level 20 after ~20 000 XP.
+
+**Ranks** follow the level:
+
+| Rank | From level |
+|---|---|
+| Tiro | 1 |
+| Gladiator | 5 |
+| Veteranus | 12 |
+| Primus Palus | 25 |
+| Rudiarius | 40 |
+
+**Where:** Profile shows the level, rank and an XP bar under the name. The workout summary shows "+145 XP" counting up with what it came from, the bar filling, and a level-up or new-rank banner.
+
+### The cell (your own home)
+
+Every gladiator has a **cell** on their profile. It is **cosmetic only**, for showing off: it grows with the rank (Cell → Barracks room → Private room → Quarters → Villa) and gets a new item at set levels (straw bed, oil lamp, training post, shield, helmet, trident, amphora, armour, laurel wreath, the rudis, a marble bust). Locked items show the level they open at. Others see your cell on your profile.
+
+## 2. Leagues and seasons
+
+A **season** is a calendar month. Laurels are earned per qualifying workout:
+
+| Source | Laurels |
+|---|---|
+| Attendance (first qualifying workout of the day) | 10 |
+| Verified at the gym | +5 (incomplete visit: +2) |
+| Progress (fair scoring, see below) | up to +10 per workout |
+| Strength (DOTS) | up to +5 per workout |
+| Weekly target hit (the workout that hits it) | +15 |
+| Duel won | +25 |
+| Ludus war won | +30 each member |
+| Bellum won (gym of the month in the city) | +40 each active member |
+
+- **Daily cap:** 45 laurels from workouts. Duels, wars and Bellum come on top.
+- **Leagues** by season score: **Bronze** 0 · **Silver** 150 · **Gold** 350 · **Imperator's Arena** 700.
+- **Partial reset:** a new season starts with half of last season's score, at most 300 (so nobody starts in Gold).
+- **Where:** Arena → League (the season's table for friends, the gym or everyone) and a small season card on Today.
+
+## Fair scoring (beginner vs. strong)
+
+So beginners can compete with strong people:
+
+- **Progress, not absolute weight.** A PR earns `gain % × level factor` laurels (at least 1, at most 10 per workout), where gain % is how much the new best e1RM beats the old one. Level factor: beginner 1.0, intermediate 1.5, advanced 2.0 (advanced lifters grow slower).
+- **Baseline.** The first 3 weeks of an exercise set its baseline: PRs in that time earn no progress laurels, so nobody gains by starting low on purpose.
+- **Attendance and consistency** carry the most weight (everyone has the same chance).
+- **Strength** has a small weight: `DOTS of the best squat + bench + deadlift e1RM ÷ 60`, at most 5 per workout. Matyáš decided DOTS is used in the game too. The DOTS score is computed on the device from the user's own bodyweight; the weight never leaves the private table.
+
+## 3. Gym visits: QR check-in and check-out
+
+A visit proves you were at the gym.
+
+1. **Check in:** scan the gym's QR poster (in the app or with the phone camera). The app reads GPS. A visit starts.
+2. **Check out:** scan the same code again when leaving. The minutes are counted.
+3. **Forgot to check out:** after 3 hours the visit closes as **incomplete** (smaller reward).
+4. **Verified** = both scans have a valid code and were within **150 m** of the gym, and the visit lasted **20 min – 4 h**. Shorter or longer visits are not counted for wars and Bellum.
+5. **Offline:** the scan and the position are saved on the device and checked when they sync (up to 48 hours late).
+
+- **The code** is `…/visit/<gym id>.<signature>`. The signature is an HMAC-SHA256 of the gym id with the gym's secret key, made and checked **only on the server**: a Postgres trigger verifies every visit as it is written (no Edge Function needed, works on the free plan).
+- **Workouts** started during a visit are **verified** (from 15 min before check-in until check-out). A workout at home or outside is **unverified**: it counts for the log, PRs, XP and laurels, but not for wars and Bellum, and earns fewer denarii.
+- **The poster:** the gym's manager (whoever added the gym, or an admin) opens Arena → My gym → **QR poster** at the gym, taps "Use my location" once, and prints the poster.
+- **Later** (after agreeing with a gym): a tablet at the desk with a code that changes every 30 seconds.
+
+## 4. Ludus and denarii
+
+- **Tribe** = everyone with the same home gym. Nothing to join.
+- **Ludus** = a crew of up to 5 people to start (barracks raise it to 10), across any gyms. It needs 3 members to fight. Create one with a name and a motto, invite with a code, link or QR. One ludus per person. Whoever creates it leads it; if the leader leaves, the longest member takes over; the last one out closes it.
+
+**Denarii** per qualifying workout:
+
+| Source | Denarii |
+|---|---|
+| Verified workout | 20 (incomplete visit 12, unverified 8) |
+| PR | +5 each, at most 3 |
+| Week streak | +1 per week, at most +5 |
+| Trained together with a ludus member | +10 |
+| Machines in your ludus or gym fortress | +5 % per level for workouts with that exercise |
+
+- **Daily cap:** 60. Without a verified visit that day the server accepts at most 30.
+- **Wallet** = denarii earned − denarii given. Give any amount to your ludus or your gym treasury.
+
+## 5. Building the fortress
+
+The ludus and the gym (tribe) each have a fortress. Any member can start a building when the treasury has enough. One construction at a time; it takes real time.
+
+| Building | Levels | Effect | Cost per level (ludus) |
+|---|---|---|---|
+| Bench | 3 | +5 % denarii per level for workouts with a bench or chest press | 150 × level |
+| Squat rack | 3 | +5 % per level for squats and lunges | 150 × level |
+| Cable station | 3 | +5 % per level for cable and pulldown exercises | 150 × level |
+| Deadlift platform | 3 | +5 % per level for deadlifts and hip thrusts | 150 × level |
+| Palisade | 5 | Defence: +5 % war points per level when attacked (gym: +2 % in Bellum) | 120 × level |
+| Barracks (ludus only) | 5 | +1 member per level | 200 × level |
+| Temple | 3 | Prestige: shows the ludus records | 250 × level |
+
+- The gym fortress costs **3×** as much (it is a bigger community).
+- **Build time:** level × 1 day (level 3 takes 3 days).
+- **Timers** need no cron job: the database stores when a building is ready and every read treats it as done from then on.
+- A **damaged** building (lost war) gives no bonus until repaired for 40 % of its level cost. Nothing is ever destroyed.
+
+## 6. Ludus wars
+
+- The leader **declares war** on another ludus. Both need 3+ members, neither can be at war, and the same two can't fight twice in 7 days. The war runs **3 days** from the declaration.
+- **Points** come only from **verified workouts** in the window: 10 per workout (2 a day at most), +5 per PR (3 at most), +5 per day trained.
+- **Per active member:** each side's points are divided by its active members at the start (trained in the 14 days before, at least 3), so a small crew can beat a big one.
+- **Defender** gets the palisade bonus.
+- **The winner** takes 20 % of the loser's treasury (at most 300) and every member gets +30 laurels. **The loser** gets one building damaged. A tie goes to the defender.
+- Settled by whoever opens the war after it ends (no cron).
+
+## 7. Duels and Bellum
+
+- **Duel:** challenge a friend for 7 days from the moment they accept: **most workouts** or **most kg added** to one lift's e1RM. The winner gets +25 laurels; a tie gives nothing.
+- **Bellum:** every month the gyms of a city fight. Score = verified visits (one per person per day) ÷ active members (at least 3 to rank), plus the gym's palisade bonus. Members of the winning gym who trained get +40 laurels after the month ends.
+- **Where:** Arena → Duels, Arena → Bellum.
+
+## 8. Attributes (character sheet)
+
+On Profile → Gladiator, 0–99 each:
+
+- **Strength:** DOTS of the best squat + bench + deadlift e1RM ÷ 5 (needs bodyweight and sex)
+- **Endurance:** working sets in the last 90 days ÷ 12
+- **Discipline:** weeks in the last 12 that hit the weekly target, as a share of 99
+
+## Anti-cheat
+
+- **Daily caps** for XP, laurels and denarii, enforced by the database (check constraints).
+- **Denarii without a verified visit** are capped lower by a trigger.
+- **QR + GPS** visits, signed codes checked on the server.
+- **Unusual PR jumps:** a new best more than 25 % above the old one (once there are 2+ sessions of that exercise) or over 1000 kg earns no PR reward. The PR still shows in the log.
+- **Reports** from other users (the existing report flow) for ludus names and profiles.
+
+## Data
+
+Tables (`supabase/updates/2026-11-13-game.sql`, also in `schema.sql`):
+
+| Table | What | Read | Write |
+|---|---|---|---|
+| `game_days` | per user and day: xp, laurels, denarii, workouts, prs (capped) | signed-in users | owner (through the queue) |
+| `game_carry` | per user and season: laurels carried over (≤ 300) | signed-in users | owner |
+| `laurel_awards` | laurels from duels, wars, Bellum | signed-in users | server functions only |
+| `gym_secrets` | the HMAC key per gym | nobody (functions only) | functions |
+| `gym_visits` | check-in/out scans, position, server-set `in_ok`, `out_ok` (status follows from the times) | owner only | owner (scans); the trigger sets the checks |
+| `ludi`, `ludus_members` | crews and who is in them | signed-in users | functions (`create_ludus`, `join_ludus`, `leave_ludus`, `remove_member`) |
+| `treasuries`, `treasury_gifts` | balance per ludus/gym, gifts | members | `donate()` |
+| `buildings` | level, target level, ready at, damaged | signed-in users | `start_building()`, `repair_building()` |
+| `ludus_wars` | the two sides, window, member counts, result | signed-in users | `declare_war()`, `settle_war()` |
+| `duels` | challenger, opponent, kind, exercise, window, result | the two players | `create_duel()`, `answer_duel()`, `settle_duel()` |
+| `bellum_results` | a city's month: gym, score, place | signed-in users | `settle_bellum()` |
+
+The temple's hall of records comes from `ludus_records()` (best squat, bench and deadlift e1RM of the members).
+
+- Gym positions (`gyms.lat`, `gyms.lng`) are set by the gym's manager. Visit positions are visible to their owner only.
+- Bodyweight never leaves `bodyweight_logs`. DOTS for laurels and Strength is computed on the user's own device; the server's DOTS (leaderboards) reads the weight only to compute the score and never returns it.

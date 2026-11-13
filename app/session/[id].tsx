@@ -1,0 +1,184 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { Landmark, Link, Pencil, Trash2 } from '@/components/icons';
+import { Fragment, useState } from 'react';
+import { Text, View } from 'react-native';
+
+import { BackLink } from '@/components/BackLink';
+import { FillButton } from '@/components/Buttons';
+import { Glass, GlassCard } from '@/components/Glass';
+import { Header, Screen } from '@/components/Screen';
+import { ShareSheet } from '@/features/forum/ForumViews';
+import { TogetherCard } from '@/features/together/TogetherViews';
+import { FeelRating } from '@/features/workout/FeelRating';
+import { SessionEditor } from '@/features/workout/SessionEditor';
+import { dropChain, isMain } from '@/lib/dropsets';
+import { formatDuration, shortDate, weekdayName, isoWeekday } from '@/lib/dates';
+import { formatKg, formatVolume, isSideSet, repsText, volume } from '@/lib/formulas';
+import { interleave, letter } from '@/lib/supersets';
+import { useData } from '@/stores/data';
+import { confirm } from '@/stores/ui';
+import { colors, tabular, type } from '@/theme/tokens';
+
+/** Session detail with Edit and Delete. */
+export default function SessionDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const session = useData((s) => s.sessions[id]);
+  const exercises = useData((s) => s.exercises);
+  const deleteSession = useData((s) => s.deleteSession);
+  const [sharing, setSharing] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  if (!session) {
+    return (
+      <Screen tabs={false}>
+        <BackLink label="Back" />
+        <Text style={type.body}>This workout no longer exists.</Text>
+      </Screen>
+    );
+  }
+
+  const d = new Date(session.started_at);
+  const heading = `${weekdayName(isoWeekday(d))}, ${shortDate(d)} ${d.getFullYear()}`;
+
+  if (editing) {
+    return (
+      <Screen tabs={false} gap={16}>
+        <Header above={heading} title="Edit workout" />
+        <SessionEditor session={session} onClose={() => setEditing(false)} />
+      </Screen>
+    );
+  }
+
+  const groups = new Map<number, typeof session.sets>();
+  for (const s of [...session.sets].sort(
+    (a, b) => a.exercise_position - b.exercise_position || a.set_number - b.set_number,
+  )) {
+    const list = groups.get(s.exercise_position) ?? [];
+    list.push(s);
+    groups.set(s.exercise_position, list);
+  }
+  // Exercises done as a superset share one card.
+  const cards: [number, typeof session.sets][][] = [];
+  for (const entry of groups.entries()) {
+    const last = cards[cards.length - 1];
+    const id = entry[1][0].superset_id;
+    if (last && id && last[0][1][0].superset_id === id) last.push(entry);
+    else cards.push([entry]);
+  }
+  const dur = session.finished_at
+    ? formatDuration(new Date(session.finished_at).getTime() - d.getTime())
+    : 'In progress';
+
+  return (
+    <Screen tabs={false} gap={16}>
+      <BackLink label="Workouts" fallback="/workouts" />
+      <Header above={heading} title={session.name} />
+      <GlassCard style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Stat value={dur} label="Duration" />
+        <Stat value={formatVolume(volume(session.sets))} label="Volume" />
+        <Stat value={String(session.sets.filter((s) => s.done).length)} label="Sets" />
+        <Stat value={String(session.pr_count)} label="PRs" accent={session.pr_count > 0} />
+      </GlassCard>
+      <TogetherCard session={session} />
+
+      {cards.map((card) => {
+        const positions = card.map(([pos]) => pos);
+        const isSuperset = card.length > 1;
+        const all = card.flatMap(([, list]) => list);
+        const mains = all.filter(isMain);
+        const sets = isSuperset ? interleave(mains, positions) : mains;
+        return (
+          <Glass key={positions[0]} radius={22} style={{ padding: 16, gap: 8 }}>
+            {isSuperset ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Link size={13} color={colors.accent} strokeWidth={2.6} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>
+                  Superset
+                </Text>
+              </View>
+            ) : null}
+            {card.map(([pos, list], i) => (
+              <Text key={pos} style={[type.bodyStrong, { fontSize: 17 }]}>
+                {isSuperset ? `${letter(i)} · ` : ''}
+                {exercises[list[0].exercise_id]?.name ?? 'Exercise'}
+              </Text>
+            ))}
+            {sets.map((s) => (
+              <Fragment key={s.id}>
+                {[s, ...dropChain(all, s.id)].map((x) => (
+                  <View key={x.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <Text style={[type.caption, { width: 56 }]}>
+                      {x.drop_of
+                        ? '  ↳ Drop'
+                        : x.warmup
+                          ? 'Warm-up'
+                          : isSuperset
+                            ? `${letter(positions.indexOf(x.exercise_position))}${x.set_number}`
+                            : `Set ${x.set_number}`}
+                    </Text>
+                    <Text style={[type.body, tabular, { flex: 1 }]}>
+                      {formatKg(x.weight_kg)} kg × {repsText(x)}
+                      {isSideSet(x) ? <Text style={type.small}> L/R</Text> : null}
+                      {x.failure ? <Text style={type.small}> · to failure</Text> : null}
+                    </Text>
+                    {x.is_pr ? (
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.accent }}>
+                        PR
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
+              </Fragment>
+            ))}
+          </Glass>
+        );
+      })}
+
+      {session.finished_at ? (
+        <>
+          <FeelRating session={session} />
+          <FillButton label="Edit workout" icon={Pencil} onPress={() => setEditing(true)} />
+          <FillButton label="Share on the Forum" icon={Landmark} onPress={() => setSharing(true)} />
+          {sharing ? (
+            <ShareSheet sessionId={session.id} visible onClose={() => setSharing(false)} />
+          ) : null}
+        </>
+      ) : null}
+
+      <FillButton
+        label="Delete workout"
+        icon={Trash2}
+        onPress={async () => {
+          const ok = await confirm({
+            title: 'Delete this workout?',
+            message: 'Its sets and PRs are removed for good.',
+            confirmLabel: 'Delete',
+            destructive: true,
+          });
+          if (!ok) return;
+          deleteSession(session.id);
+          if (router.canGoBack()) router.back();
+          else router.replace('/workouts');
+        }}
+      />
+    </Screen>
+  );
+}
+
+function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <Text
+        style={[
+          type.bodyStrong,
+          { fontSize: 16, fontWeight: '700' },
+          accent && { color: colors.accent },
+        ]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+      <Text style={type.small}>{label}</Text>
+    </View>
+  );
+}
