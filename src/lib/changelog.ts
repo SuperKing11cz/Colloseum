@@ -7,7 +7,8 @@ export type FeatureId =
   | 'generate'
   | 'notifications'
   | 'game'
-  | 'city';
+  | 'city'
+  | 'running';
 
 /** A big new feature, shown as its own card above the release's list. */
 export interface Highlight {

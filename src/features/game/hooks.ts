@@ -111,8 +111,9 @@ export function useGearProgress(): GearProgress {
   return useMemo(
     () => ({
       level: game.level,
+      // Runs count like verified workouts (docs/GAME.md → 11), as on the server.
       verified: Object.values(game.sessions).filter(
-        (s) => s.qualifies && s.verification === 'verified',
+        (s) => s.qualifies && (s.verification === 'verified' || s.run),
       ).length,
       league: bestLeague(game.seasons.map((s) => leagueFor(s.score).id)),
       bought: bought ?? new Set(),

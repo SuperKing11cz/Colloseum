@@ -11,7 +11,7 @@ import { Avatar } from '@/components/Avatar';
 import { CityArt } from '@/components/art/Art';
 import { FillButton } from '@/components/Buttons';
 import { Glass } from '@/components/Glass';
-import { Bell, Check, ChevronRight, MapPin, Star, Zap } from '@/components/icons';
+import { Bell, Check, ChevronRight, Footprints, MapPin, Star, Zap } from '@/components/icons';
 import { LogoMark } from '@/components/Logo';
 import { QrCode } from '@/components/QrCode';
 import { Chip } from '@/components/Segmented';
@@ -153,6 +153,16 @@ const SHOW: Record<FeatureId, () => void> = {
   // Turned on right on the card (NotificationsAction); Show me is the fallback.
   notifications: () => router.navigate('/profile/settings'),
   city: () => router.navigate('/city'),
+  running: () =>
+    showSpotlight(
+      {
+        target: 'workouts-run',
+        radius: 22,
+        title: 'Log a run',
+        body: 'Type the distance and time. A run from 3 km or 20 minutes earns what a workout earns and counts in wars.',
+      },
+      '/workouts',
+    ),
   game: () => {
     usePrefs.getState().setArenaMode('league');
     showGuide([
@@ -250,6 +260,16 @@ function Preview({ feature }: { feature: FeatureId }) {
       );
     case 'city':
       return <CityArt width={240} />;
+    case 'running':
+      return (
+        <View style={[styles.row, { gap: 14 }]}>
+          <Footprints size={40} color={colors.accent} strokeWidth={2} />
+          <View style={{ gap: 4 }}>
+            <Text style={[type.bodyStrong, { fontSize: 22 }]}>5:12 /km</Text>
+            <Text style={type.small}>5 km · 26:00 · +100 XP</Text>
+          </View>
+        </View>
+      );
     case 'train-together':
       return (
         <View style={[styles.row, { gap: 10 }]}>

@@ -18,6 +18,7 @@ import { BodyView } from '@/features/profile/BodyView';
 import { FeelTrend } from '@/features/profile/FeelTrend';
 import { WeeklySets } from '@/features/profile/WeeklySets';
 import { LiftsView } from '@/features/profile/LiftsView';
+import { RunningBests } from '@/features/running/RunViews';
 import { useGym } from '@/features/social/api';
 import { useFinishedSessions } from '@/features/training/hooks';
 import { useData } from '@/stores/data';
@@ -108,6 +109,7 @@ export default function Profile() {
               router.push({ pathname: '/profile/exercise/[id]', params: { id } })
             }
           />
+          <RunningBests />
         </>
       )}
     </Screen>

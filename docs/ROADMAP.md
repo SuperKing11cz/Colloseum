@@ -189,6 +189,21 @@ Matyáš's plan (2026-11-13). Built and checked on web in demo mode; `supabase/u
 - [x] Pledges to defend, the result screen and revenge
 - [ ] Push notification when your tribe is attacked (needs the push sender)
 
+## Phase 20 — Running (next, `docs/GAME.md` → 11)
+
+`supabase/updates/2026-11-14-running.sql` has run on the live project (2026-11-14).
+
+- [x] Pure functions with tests: pace, qualifying run, standard-distance best times, VDOT, run anti-cheat (`src/lib/running.ts`)
+- [x] Runs as `workout_sessions` of kind 'run', heart rate in the private `session_ratings`, checks for impossible paces
+- [x] Workouts → Log a run: manual entry, live pace, offline queue
+- [x] Runs in the history, the friends feed and their own detail screen with the reward (+XP, laurels)
+- [x] XP, laurels, denarii, weekly target and Retiarius from runs, inside the shared daily caps
+- [x] Runs count in ludus wars, tribe attacks, Bellum and workout duels
+- [x] Arena: Running metrics (best 5 km, best 10 km, VDOT, km)
+- [x] Profile → Lifts: running bests
+- [x] Changelog line and a highlights card
+- [ ] Later, with the native apps: GPS recording
+
 ## Game docs
 
 - [x] `docs/GAME.md` with the rules, numbers and tables

@@ -9,7 +9,7 @@ import { GladiatorArt } from '@/components/art/Art';
 import { GlassCard } from '@/components/Glass';
 import { Coins } from '@/components/icons';
 import { LogoMark } from '@/components/Logo';
-import { QUALIFYING_SETS, XP } from '@/lib/game/config';
+import { QUALIFYING_SETS, RUN, XP } from '@/lib/game/config';
 import { rankFor } from '@/lib/game/levels';
 import { useTween } from '@/lib/useTween';
 import { useData } from '@/stores/data';
@@ -21,6 +21,7 @@ import { useMyGame } from './hooks';
 export function RewardCard({ sessionId }: { sessionId: string }) {
   const game = useMyGame();
   const homeGym = useData((s) => s.profile?.home_gym_id);
+  const run = useData((s) => s.sessions[sessionId]?.kind === 'run');
   const reduced = useReducedMotion();
   const r = game.sessions[sessionId];
   const xp = useTween(r?.xp ?? 0, 1100);
@@ -31,7 +32,9 @@ export function RewardCard({ sessionId }: { sessionId: string }) {
       <GlassCard radius={22} style={styles.card}>
         <Text style={type.bodyStrong}>No XP this time</Text>
         <Text style={type.small}>
-          Log at least {QUALIFYING_SETS} working sets for a workout to count.
+          {run
+            ? `Runs from ${RUN.minDistanceM / 1000} km or ${RUN.minDurationS / 60} minutes at a running pace count.`
+            : `Log at least ${QUALIFYING_SETS} working sets for a workout to count.`}
         </Text>
       </GlassCard>
     );
@@ -103,11 +106,17 @@ export function RewardCard({ sessionId }: { sessionId: string }) {
       ) : null}
       {r.unusualPrs > 0 ? (
         <Text style={type.small}>
-          {r.unusualPrs === 1 ? 'One PR jumped' : `${r.unusualPrs} PRs jumped`} more than 25 % over
-          the old best: no reward for it this time.
+          {run
+            ? `This run beat your best by more than ${RUN.unusualGain * 100} %`
+            : r.unusualPrs === 1
+              ? 'One PR jumped more than 25 % over the old best'
+              : `${r.unusualPrs} PRs jumped more than 25 % over the old best`}
+          : no reward for it this time.
         </Text>
       ) : null}
-      {!r.verification && homeGym ? (
+      {run && !r.verification ? (
+        <Text style={type.small}>This run counts in wars, Bellum and tribe attacks.</Text>
+      ) : !r.verification && homeGym ? (
         <Text style={type.small}>
           Check in at your gym with its QR code next time: +{XP.verified} XP, more denarii, and the
           workout counts in wars.

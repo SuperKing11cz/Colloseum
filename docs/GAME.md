@@ -23,6 +23,8 @@ An RPG layer on top of the tracker, inspired by Gladiatus (XP and ranks), Clash 
 
 A **qualifying workout** is a finished workout with at least **3 done working sets** (warm-ups don't count). Only qualifying workouts earn anything.
 
+A **qualifying run** (section 11) is worth exactly one qualifying workout. Everything below that says "workout" means a workout or a run.
+
 ## 1. XP and ranks
 
 Per qualifying workout:
@@ -220,12 +222,62 @@ The **map** (Arena → Bellum → Map, or the Colosseum in the city) shows the t
 - **Revenge:** within 24 hours of a lost defence the tribe can attack the winner back for free with **+20 %** points, even inside the 7 days.
 - Settled by whoever opens the war after it ends (no cron).
 
+## 11. Running
+
+Running is a second way to train, balanced so a runner and a lifter compete on equal terms. **The one rule holds: no points for kilometres.** A run earns what a lifting session earns, so a marathon is not worth five gym sessions.
+
+### Logging a run
+
+Workouts → **Log a run** (manual entry for now; GPS recording comes with the native apps). Offline first, like every write.
+
+| Field | Required | Notes |
+|---|---|---|
+| Day and start time | yes | today or the 6 days before; an empty start time means "just finished" |
+| Distance | yes | km, two decimals |
+| Duration | yes | h:mm:ss |
+| Where | yes | Outdoor / Treadmill (segmented) |
+| Average heart rate | no | bpm, 60–220. **Private**, like bodyweight |
+| Elevation gain | no | m |
+| Note | no | |
+
+- **Pace is not entered**, it follows from distance and time and shows live under the fields ("5:12 /km"). Entering both could contradict.
+- Others see the distance, time and pace. The heart rate is only ever seen by the owner.
+
+### What counts
+
+A **qualifying run**: at least **3 km or 20 minutes**, an average pace between the world-record pace for that distance and **12:00 /km** (slower is a walk), at most 100 km and 12 hours.
+
+### Rewards (the same as a workout)
+
+| | Run |
+|---|---|
+| XP | 100 + PR (+30 each, 1 per run) + week streak + trained together |
+| Laurels | attendance 10, progress up to +10, strength up to +5, weekly target |
+| Denarii | as an unverified workout, or verified when run during a gym visit (treadmill) |
+| Daily caps | **shared** with lifting: a run and a lifting session on one day fill the same 300 XP / 45 laurels |
+| Weekly target | a run counts as a training day |
+| Fighting style | earns the Retiarius bonus |
+
+- **Standard distances:** 5 km, 10 km, half marathon (21.1 km), marathon (42.2 km). A run counts for distance *d* when it is *d* to *d* × 1.05 long; its time is scaled to *d* (`time × d ÷ distance`).
+- **PR:** a new best time on a standard distance.
+- **Progress laurels:** `gain % × level factor`, where gain % is how much faster the new best is than the old one. Same level factor, same 3-week baseline per distance as lifts.
+- **Strength laurels:** the runner's equivalent of DOTS is **VDOT** (Jack Daniels, from the best run of the last 90 days). `(VDOT − 30) ÷ 4`, at most 5, so VDOT 50 reaches the cap like DOTS 300. No bodyweight needed.
+
+### Wars
+
+**Runs count in ludus wars, tribe attacks and Bellum** like verified workouts (Matyáš decided 2026-11-14): 10 points, at most 2 a day together with workouts, +5 per PR, +5 per day trained. They also count for active members, "workouts" duels, tribe strength and the gear opened by verified workouts. The gym-visit bonuses (XP, laurels, denarii) stay for QR visits only.
+
+### Arena
+
+Arena gets a **Running** metric group: best 5 km, best 10 km, VDOT, and km in the period. The km board only shows; it earns nothing.
+
 ## Anti-cheat
 
 - **Daily caps** for XP, laurels and denarii, enforced by the database (check constraints).
 - **Denarii without a verified visit** are capped lower by a trigger.
 - **QR + GPS** visits, signed codes checked on the server.
 - **Unusual PR jumps:** a new best more than 25 % above the old one (once there are 2+ sessions of that exercise) or over 1000 kg earns no PR reward. The PR still shows in the log.
+- **Runs:** faster than the world-record pace for the distance is refused (database check). A new best more than 10 % faster than the old one (once there are 2+ runs on that distance) earns no PR or progress reward. Runs that count in wars can be reported from the war screen.
 - **Reports** from other users (the existing report flow) for ludus names and profiles.
 
 ## Data
@@ -250,6 +302,10 @@ Tables (`supabase/updates/2026-11-13-game.sql`, also in `schema.sql`):
 | `tribe_wars` | attacker and defender gym, warning and battle window, revenge, active members, gear and wall bonus, result | signed-in users | `declare_tribe_war()`, `settle_tribe_war()` |
 | `tribe_pledges` | who pledged to train for a war | signed-in users | `pledge_defence()` |
 | `territories` | who holds a gym's territory (no row = the gym itself) | signed-in users | `settle_tribe_war()` |
+| `workout_sessions` (runs) | `kind = 'run'` with `distance_m`, `duration_s`, `run_place`, `elevation_m`, no sets; checks for impossible paces | like workouts | owner (through the queue) |
+| `session_ratings.avg_hr` | a run's average heart rate, private like rpe and feel | owner only | owner (through the queue) |
+
+Running: `supabase/updates/2026-11-14-running.sql`. `session_counts(s)` is the server's `qualifies()`; `verified_sessions()` includes runs that count; `get_leaderboard()` learns `run_5k`, `run_10k` (seconds, lower is better), `vdot` and `run_km`.
 
 The city and the map: `supabase/updates/2026-11-14-city.sql`. The map comes from `city_map(city)`, an enemy tribe's best three and its weekend share from `tribe_info(gym)`, live scores from `tribe_war_scores(war)` and my part from `tribe_war_me(war)`.
 

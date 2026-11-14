@@ -133,6 +133,31 @@ export const STYLE = {
   bodyweightShare: 0.5,
 } as const;
 
+/** Running (docs/GAME.md → 11). A run is worth one workout; never anything per km. */
+export const RUN = {
+  /** A run counts from this distance or this duration. */
+  minDistanceM: 3000,
+  minDurationS: 20 * 60,
+  /** Slower than this (seconds per km) is a walk. */
+  maxPace: 12 * 60,
+  maxDistanceM: 100000,
+  maxDurationS: 12 * 3600,
+  /** A run counts for a standard distance d when it is d to d × this long. */
+  distanceSlack: 1.05,
+  /** Only one PR per run (one distance). */
+  maxPrs: 1,
+  /** A new best this much faster than the old one (with 2+ earlier runs) is not rewarded. */
+  unusualGain: 0.1,
+  unusualMinRuns: 2,
+  /** Like lifts: the first weeks on a distance set its baseline. */
+  baselineDays: 21,
+  /** Strength laurels from the best VDOT of this many days: (VDOT − base) ÷ step. */
+  vdotDays: 90,
+  vdotBase: 30,
+  vdotStep: 4,
+  maxStrength: 5,
+} as const;
+
 /** Gear raises a member's war points by up to this share. */
 export const GEAR = { maxWarBonus: 0.15 } as const;
 

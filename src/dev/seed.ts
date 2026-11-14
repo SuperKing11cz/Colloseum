@@ -79,6 +79,17 @@ export const DEMO_STATS: Record<
   petr: { bench: 85, squat: 110, deadlift: 150, weekVolume: 7000, workouts: 1, bodyweight: 68 },
 };
 
+/** Demo friends who run: best 5 km and 10 km (seconds), VDOT and km in a week. */
+export const DEMO_RUNS: Record<
+  string,
+  { fiveK: number; tenK: number | null; vdot: number; weekKm: number }
+> = {
+  ondrej: { fiveK: 21 * 60 + 40, tenK: 45 * 60 + 10, vdot: 45.6, weekKm: 24 },
+  lukas: { fiveK: 24 * 60 + 5, tenK: 50 * 60 + 30, vdot: 40.4, weekKm: 15 },
+  petr: { fiveK: 27 * 60 + 50, tenK: null, vdot: 34.6, weekKm: 8 },
+  filip: { fiveK: 23 * 60 + 15, tenK: 49 * 60 + 2, vdot: 42.1, weekKm: 11 },
+};
+
 /** A Push/Pull/Legs program for the demo user. */
 export function demoProgram(userId: string, now: Date): Program {
   const pe = (
@@ -236,6 +247,34 @@ export function demoSessions(userId: string, program: Program, now: Date): Sessi
         : null),
       updated_at: start.toISOString(),
       sets,
+    });
+  }
+  // A Saturday-morning run every week for the last 6 weeks, getting a little faster.
+  for (let w = 6; w >= 1; w--) {
+    const d = addDays(now, -7 * w + 2);
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 8, 15);
+    if (start > now) continue;
+    const km = w % 2 ? 5.05 : 10.1;
+    const pace = (w % 2 ? 330 : 345) - (6 - w) * 3;
+    const duration = Math.round(km * pace);
+    out.push({
+      id: sid(`run:${start.toISOString()}`),
+      user_id: userId,
+      program_day_id: null,
+      name: w === 3 ? 'Treadmill run' : 'Run',
+      started_at: start.toISOString(),
+      finished_at: new Date(start.getTime() + duration * 1000).toISOString(),
+      volume_kg: 0,
+      set_count: 0,
+      pr_count: w < 5 ? 1 : 0,
+      kind: 'run',
+      distance_m: Math.round(km * 1000),
+      duration_s: duration,
+      run_place: w === 3 ? 'treadmill' : 'outdoor',
+      elevation_m: w === 3 ? null : 40 + w * 5,
+      avg_hr: 150 + w,
+      updated_at: start.toISOString(),
+      sets: [],
     });
   }
   return out;

@@ -8,6 +8,30 @@ import type { Release } from '@/lib/changelog';
 
 export const CHANGELOG: Release[] = [
   {
+    id: '2026-11-14b',
+    date: '2026-11-14',
+    title: 'Running',
+    highlights: [
+      {
+        feature: 'running',
+        title: 'Runners join the Arena',
+        body: 'Log a run and it earns what a lifting workout earns: XP, laurels and denarii, and points in wars. Never more for more kilometres, so runners and lifters compete fairly.',
+        where: 'Workouts → Log a run',
+      },
+    ],
+    items: [
+      'Log a run in Workouts: distance, time, outdoor or treadmill. Your pace is worked out for you.',
+      'A run from 3 km or 20 minutes counts as a workout for XP, laurels, denarii, your weekly target and your streak.',
+      'Runs count in ludus wars, tribe attacks, Bellum and workout duels.',
+      'Running PRs on 5 km, 10 km, half marathon and marathon earn XP and progress laurels.',
+      'Running strength: your best VDOT earns strength laurels, like DOTS does for lifters.',
+      'The Retiarius style earns its bonus for a run.',
+      'Your best times are in Profile → Lifts.',
+      'New Arena boards: best 5 km, best 10 km, VDOT and km run. Add them with Edit.',
+      'Heart rate is optional and only you see it.',
+    ],
+  },
+  {
     id: '2026-11-14',
     date: '2026-11-14',
     title: 'Your gladiator and the city',
