@@ -84,6 +84,8 @@ const demo = {
   inLudus: true,
   ludus: { ...DEMO_LUDUS, members: [...DEMO_LUDUS.members] },
   given: 0,
+  /** Spent on gear (cityApi.ts). */
+  spent: 0,
   treasuries: {
     [`ludus:${DEMO_LUDUS.id}`]: DEMO_LUDUS.treasury,
     [`gym:${demoGymId}`]: 2480,
@@ -701,12 +703,23 @@ export function useRemoveMember() {
 
 // ───────────── Wallet, treasuries and buildings ─────────────
 
+/** Demo mode: pay from the wallet (gear) or a gym treasury (an attack). */
+export function demoPay(from: 'wallet' | `gym:${string}`, amount: number) {
+  if (from === 'wallet') demo.spent += amount;
+  else demoSpend('gym', from.slice(4), amount);
+}
+
+/** Demo mode: a gym treasury's balance. */
+export function demoTreasury(gymId: string): number {
+  return demo.treasuries[`gym:${gymId}`] ?? 0;
+}
+
 /** Denarii I can give. `earned` is computed on the device (used in demo mode). */
 export function useWallet(earned: number) {
   return useQuery({
     queryKey: ['wallet', me(), isDemo ? earned : 0],
     queryFn: async (): Promise<number> => {
-      if (isDemo) return Math.max(0, earned - demo.given);
+      if (isDemo) return Math.max(0, earned - demo.given - demo.spent);
       return Number(check(await supabase.rpc('my_wallet')) ?? 0);
     },
   });

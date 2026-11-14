@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ArtStage, FortressArt } from '@/components/art/Art';
 import { FillButton } from '@/components/Buttons';
 import { ProgressBar } from '@/components/Charts';
 import { FormField, FormGroup } from '@/components/Form';
@@ -26,6 +27,9 @@ import {
   buildDays,
   buildingsFor,
   currentLevel,
+  fortressLevel,
+  fortressStage,
+  FORTRESS_STAGES,
   levelCost,
   repairCost,
   timeLeftText,
@@ -111,8 +115,40 @@ export function FortressView({
       );
   };
 
+  const total = fortressLevel(data.buildings, new Date(now));
+  const stage = fortressStage(total);
+  const here = FORTRESS_STAGES[stage];
+  const ahead = FORTRESS_STAGES[stage + 1];
+
   return (
     <View style={{ gap: 12 }}>
+      <ArtStage
+        height={200}
+        overlay={
+          <Text style={type.rpg} numberOfLines={1}>
+            {title}
+          </Text>
+        }
+      >
+        <FortressArt stage={stage} width={stage === 3 ? 215 : 230} />
+      </ArtStage>
+      <View style={{ gap: 6, paddingHorizontal: 4 }}>
+        <Text style={type.bodyStrong}>
+          {here.name} · <Text style={tabular}>lv {total}</Text>
+        </Text>
+        {ahead ? (
+          <>
+            <ProgressBar value={(total - here.from) / (ahead.from - here.from)} height={5} />
+            <Text style={type.small}>
+              At level {ahead.from} it becomes{' '}
+              {ahead.name === 'Colosseum' ? 'the Colosseum' : `a ${ahead.name.toLowerCase()}`}.
+              Every building level counts.
+            </Text>
+          </>
+        ) : (
+          <Text style={type.small}>The fortress is a Colosseum.</Text>
+        )}
+      </View>
       <GlassCard radius={22} style={styles.treasury}>
         <View style={styles.coin}>
           <Coins size={20} color={colors.accent} strokeWidth={2.2} />

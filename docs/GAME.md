@@ -180,6 +180,46 @@ On Profile → Gladiator, 0–99 each:
 - **Endurance:** working sets in the last 90 days ÷ 12
 - **Discipline:** weeks in the last 12 that hit the weekly target, as a share of 99
 
+## 9. The city, fighting styles and gear
+
+**The city** (Today → The city) is the way into the game: the Colosseum (tribe wars and the map), the forge, the market and the baths (both later), the temple (the tribe fortress), your domus (Profile → Gladiator) and your ludus.
+
+### Fighting style
+
+Chosen in Forge → Style. The style sets how the gladiator looks and gives **+15 XP** for a workout trained its way (inside the daily XP cap). The first choice is free; after that it changes **once a season**. The style in force when a workout started counts, so a change never takes back XP.
+
+| Style | Rewards | A workout earns the bonus when |
+|---|---|---|
+| Murmillo | Strength | a working set of 6 reps or fewer (with weight) |
+| Thraex | Hypertrophy | at least 2/3 of the working sets are 8–15 reps |
+| Retiarius | Endurance | it has cardio or a superset |
+| Secutor | Discipline | last week hit the weekly target |
+| Hoplomachus | Versatility | 4 or more muscle groups |
+| Bestiarius | Bodyweight | at least half the working sets have no added weight |
+
+The bonus is flat, so more sets never earn more (the "no XP for volume" rule holds).
+
+### Gear
+
+Five slots: helmet, weapon, shield, guards, armour. Everyone starts with the Galea, Rudis, Parmula, Fasciae and a Tunic. Every piece has a **power**; the sum is the gladiator's **gear power** (120 at the start, 490 at most).
+
+- A piece opens by **denarii** (bought from the wallet), a **level**, a number of **verified workouts**, or a **league** reached in any season. Never by money.
+- The catalog with powers and prices is `GEAR_ITEMS` in `src/lib/game/gear.ts` (same as `gear_info()` in SQL).
+- **In tribe wars** each active member adds `15 % × power ÷ 490`; a side's bonus is the average of its active members, taken when the war is declared.
+
+## 10. The map and tribe attacks
+
+The **map** (Arena → Bellum → Map, or the Colosseum in the city) shows the tribes (home gyms) of your city at their positions, with a territory that grows with the gym fortress level. Filters: all, at war, weaker, stronger (within 10 % counts as even).
+
+- **Strength** of a tribe = 20 per verified workout of its members in the last 14 days + the gear power of those members.
+- **Territory:** every gym starts holding its own. A tribe that wins an attack takes every territory the defender holds. The **city ranking** is by territories, then fortress level.
+- **Declare an attack:** any tribe member from level 5 (Gladiator), on a tribe of the same city. Both need 3 members with a verified workout in the last 14 days; neither can be at war; the same two not twice in 7 days. It costs **100 denarii** from the tribe treasury.
+- **Timing:** a **24-hour warning** (members pledge to train: "I pledge to train within 24 h"), then **3 days** of battle.
+- **Points:** like ludus wars (10 per verified workout, 2 a day, +5 per PR up to 3, +5 per day trained), per active member (at least 3), times `1 + gear bonus`, plus the defender's walls (+3 % per palisade level).
+- **The winner** takes 20 % of the loser's treasury (at most 500) and the loser's territories (if the attacker won). **The loser** gets a building damaged, the walls first. Nothing is destroyed. A tie goes to the defender.
+- **Revenge:** within 24 hours of a lost defence the tribe can attack the winner back for free with **+20 %** points, even inside the 7 days.
+- Settled by whoever opens the war after it ends (no cron).
+
 ## Anti-cheat
 
 - **Daily caps** for XP, laurels and denarii, enforced by the database (check constraints).
@@ -205,6 +245,13 @@ Tables (`supabase/updates/2026-11-13-game.sql`, also in `schema.sql`):
 | `ludus_wars` | the two sides, window, member counts, result, gloria won or lost per side | signed-in users | `declare_war()`, `settle_war()` |
 | `duels` | challenger, opponent, kind, exercise, window, result | the two players | `create_duel()`, `answer_duel()`, `settle_duel()` |
 | `bellum_results` | a city's month: gym, score, place | signed-in users | `settle_bellum()` |
+| `gladiators` | style (and its history), the worn gear, gear power | signed-in users | `choose_style()`, `equip_gear()` |
+| `gear_purchases` | pieces bought with denarii (the wallet subtracts them) | owner only | `buy_gear()` |
+| `tribe_wars` | attacker and defender gym, warning and battle window, revenge, active members, gear and wall bonus, result | signed-in users | `declare_tribe_war()`, `settle_tribe_war()` |
+| `tribe_pledges` | who pledged to train for a war | signed-in users | `pledge_defence()` |
+| `territories` | who holds a gym's territory (no row = the gym itself) | signed-in users | `settle_tribe_war()` |
+
+The city and the map: `supabase/updates/2026-11-14-city.sql`. The map comes from `city_map(city)`, an enemy tribe's best three and its weekend share from `tribe_info(gym)`, live scores from `tribe_war_scores(war)` and my part from `tribe_war_me(war)`.
 
 The temple's hall of records comes from `ludus_records()` (best squat, bench and deadlift e1RM of the members). The ludus ranking comes from `ludus_ranking()`.
 

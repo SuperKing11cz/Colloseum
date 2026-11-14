@@ -38,7 +38,7 @@ A free project **pauses after 1 week without activity**. That is fine for testin
 | `gym_challenges` | gym, title, exercise or metric, target, start and end dates | members of that gym | members (create) |
 | `session_likes`, `session_comments` | feed reactions | whoever can see the session | owner of the like or comment |
 
-**The game layer** (XP, leagues, visits, ludus, fortresses, wars, duels, Bellum): tables, RLS and functions are in `docs/GAME.md` → Data and `supabase/updates/2026-11-13-game.sql`.
+**The game layer** (XP, leagues, visits, ludus, fortresses, wars, duels, Bellum, styles, gear, tribe attacks): tables, RLS and functions are in `docs/GAME.md` → Data, `supabase/updates/2026-11-13-game.sql` and `supabase/updates/2026-11-14-city.sql`.
 
 **Views and functions:**
 

@@ -42,14 +42,46 @@ export interface Rank {
   from: number;
   /** One line on what the rank means. */
   blurb: string;
+  /** What the gladiator wears at this rank. */
+  look: string;
 }
 
 export const RANKS: Rank[] = [
-  { id: 'tiro', name: 'Tiro', from: 1, blurb: 'A recruit, new to the ludus.' },
-  { id: 'gladiator', name: 'Gladiator', from: 5, blurb: 'Trained and fighting in the arena.' },
-  { id: 'veteranus', name: 'Veteranus', from: 12, blurb: 'Survived many fights.' },
-  { id: 'primus', name: 'Primus Palus', from: 25, blurb: 'The best of the ludus.' },
-  { id: 'rudiarius', name: 'Rudiarius', from: 40, blurb: 'Earned the wooden sword of freedom.' },
+  {
+    id: 'tiro',
+    name: 'Tiro',
+    from: 1,
+    blurb: 'A recruit, new to the ludus.',
+    look: 'Tunic, wooden sword',
+  },
+  {
+    id: 'gladiator',
+    name: 'Gladiator',
+    from: 5,
+    blurb: 'Trained and fighting in the arena.',
+    look: 'Helmet, round shield, gladius',
+  },
+  {
+    id: 'veteranus',
+    name: 'Veteranus',
+    from: 12,
+    blurb: 'Survived many fights.',
+    look: 'Scutum, manica, crest',
+  },
+  {
+    id: 'primus',
+    name: 'Primus Palus',
+    from: 25,
+    blurb: 'The best of the ludus.',
+    look: 'Golden armour, red cloak',
+  },
+  {
+    id: 'rudiarius',
+    name: 'Rudiarius',
+    from: 40,
+    blurb: 'Earned the wooden sword of freedom.',
+    look: 'Golden laurel, the rudis',
+  },
 ];
 
 export function rankFor(level: number): Rank {

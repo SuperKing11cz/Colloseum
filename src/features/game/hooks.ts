@@ -19,7 +19,10 @@ import { useNow } from '@/lib/useNow';
 import { useData } from '@/stores/data';
 import { useGame } from '@/stores/game';
 import { useQueue } from '@/stores/queue';
+import { bestLeague, type GearProgress } from '@/lib/game/gear';
+import { leagueFor } from '@/lib/game/levels';
 import { useAwards, useFortress, useMyLudus, useMyTogether, useVisitPull } from './api';
+import { useGladiator } from './cityApi';
 
 export function useVisits(): GymVisit[] {
   const visits = useGame((s) => s.visits);
@@ -56,6 +59,7 @@ export function useMyGame(): MyGame {
   const ludus = useMyLudus().data;
   const buildings = useMyBuildings();
   const awards = useAwards().data;
+  const styles = useGladiator().data?.styles;
 
   return useMemo(() => {
     const dotsK = myDotsCoefficient();
@@ -75,6 +79,8 @@ export function useMyGame(): MyGame {
       ),
       denariiBonus: (_s, names) => machineBonus(buildings, names),
       awards: awards ?? {},
+      styles,
+      exerciseMuscles: (id) => exercises[id]?.muscles ?? [],
     });
     return {
       ...state,
@@ -92,9 +98,27 @@ export function useMyGame(): MyGame {
     ludus,
     buildings,
     awards,
+    styles,
     bodyweights,
     sex,
   ]);
+}
+
+/** What opens gear: level, verified workouts, the best league and pieces bought. */
+export function useGearProgress(): GearProgress {
+  const game = useMyGame();
+  const bought = useGladiator().data?.bought;
+  return useMemo(
+    () => ({
+      level: game.level,
+      verified: Object.values(game.sessions).filter(
+        (s) => s.qualifies && s.verification === 'verified',
+      ).length,
+      league: bestLeague(game.seasons.map((s) => leagueFor(s.score).id)),
+      bought: bought ?? new Set(),
+    }),
+    [game, bought],
+  );
 }
 
 export function useMyAttributes(): Attributes {

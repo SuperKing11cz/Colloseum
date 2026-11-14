@@ -5,6 +5,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 
+import { GladiatorArt } from '@/components/art/Art';
 import { GlassCard } from '@/components/Glass';
 import { Coins } from '@/components/icons';
 import { LogoMark } from '@/components/Logo';
@@ -45,21 +46,31 @@ export function RewardCard({ sessionId }: { sessionId: string }) {
         <LevelLine level={r.levelAfter} />
       </View>
 
-      {levelUp ? (
+      {newRank ? (
+        <Animated.View
+          entering={reduced ? undefined : ZoomIn.delay(900).springify()}
+          style={styles.rankUp}
+          accessibilityLabel={`New rank: ${rankFor(r.levelAfter).name}`}
+        >
+          <Text style={styles.kicker}>NEW RANK</Text>
+          <GladiatorArt rank={rankFor(r.levelAfter).id} width={150} />
+          <Text style={[type.rpg, { fontSize: 26, letterSpacing: 2 }]}>
+            {rankFor(r.levelAfter).name}
+          </Text>
+          <Text style={[type.caption, { textAlign: 'center' }]}>
+            Level {r.levelAfter} · your gladiator has a new look:{' '}
+            {rankFor(r.levelAfter).look.toLowerCase()}. Your cell grew too.
+          </Text>
+        </Animated.View>
+      ) : levelUp ? (
         <Animated.View
           entering={reduced ? undefined : ZoomIn.delay(900).springify()}
           style={styles.banner}
         >
           <LogoMark size={26} />
           <View style={{ flex: 1 }}>
-            <Text style={[type.bodyStrong, { color: colors.accent }]}>
-              {newRank ? `New rank: ${rankFor(r.levelAfter).name}` : `Level ${r.levelAfter}!`}
-            </Text>
-            <Text style={type.small}>
-              {newRank
-                ? `Level ${r.levelAfter}. Your cell grew too.`
-                : 'Something new may be waiting in your cell.'}
-            </Text>
+            <Text style={[type.bodyStrong, { color: colors.accent }]}>Level {r.levelAfter}!</Text>
+            <Text style={type.small}>Something new may be waiting in your cell.</Text>
           </View>
         </Animated.View>
       ) : null}
@@ -122,6 +133,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: accentA(0.07),
   },
+  rankUp: { alignItems: 'center', gap: 6, paddingVertical: 8 },
+  kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 3, color: colors.accent },
   parts: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   part: {
     borderRadius: 999,

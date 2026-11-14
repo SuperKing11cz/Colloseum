@@ -8,6 +8,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
+import { CityArt } from '@/components/art/Art';
 import { FillButton } from '@/components/Buttons';
 import { Glass } from '@/components/Glass';
 import { Bell, Check, ChevronRight, MapPin, Star, Zap } from '@/components/icons';
@@ -151,6 +152,7 @@ const SHOW: Record<FeatureId, () => void> = {
   },
   // Turned on right on the card (NotificationsAction); Show me is the fallback.
   notifications: () => router.navigate('/profile/settings'),
+  city: () => router.navigate('/city'),
   game: () => {
     usePrefs.getState().setArenaMode('league');
     showGuide([
@@ -246,6 +248,8 @@ function Preview({ feature }: { feature: FeatureId }) {
           </View>
         </View>
       );
+    case 'city':
+      return <CityArt width={240} />;
     case 'train-together':
       return (
         <View style={[styles.row, { gap: 10 }]}>

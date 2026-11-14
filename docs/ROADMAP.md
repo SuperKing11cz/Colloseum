@@ -170,6 +170,25 @@ Matyáš's plan (2026-11-13). Built and checked on web in demo mode; `supabase/u
 
 - [x] Character sheet: Strength, Endurance, Discipline
 
+## Phase 18 — The city, styles and gear
+
+`supabase/updates/2026-11-14-city.sql` has run on the live project (2026-11-14).
+
+- [x] Illustrations from the design: the gladiator per rank, the home, fortress stages, fighting styles, gear and the city
+- [x] The city (Today → The city): every building opens a part of the game
+- [x] Fighting styles with a +15 XP bonus, changed once a season (history kept)
+- [x] The forge: 32 pieces in 5 slots, bought with denarii or opened by level, verified workouts or league
+- [ ] The market and the baths (to decide with Matyáš)
+
+## Phase 19 — The map and tribe attacks
+
+- [x] The map of the city: tribes, territories, filters, running attacks
+- [x] An enemy tribe up close: strength, walls, spoils, weak spot, their best three
+- [x] Comparing gear with their best
+- [x] Tribe attacks: 24 h warning, 3 days, gear and wall bonus, spoils, territory, damage
+- [x] Pledges to defend, the result screen and revenge
+- [ ] Push notification when your tribe is attacked (needs the push sender)
+
 ## Game docs
 
 - [x] `docs/GAME.md` with the rules, numbers and tables

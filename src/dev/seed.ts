@@ -683,3 +683,152 @@ export const DEMO_BELLUM = [
   { gym: 'Spartan Box', active: 12, visitDays: 131, palisade: 2 },
   { gym: 'Fit Point Karlín', active: 2, visitDays: 15, palisade: 0 },
 ];
+
+/**
+ * The tribes of the demo user's city on the map (Prague). The first two are DEMO_GYMS; positions
+ * are rough district centres. `strength` and `best` stand in for the server's city_map and
+ * tribe_info.
+ */
+export const DEMO_CITY = [
+  {
+    id: DEMO_GYMS[0].id,
+    name: 'Iron Forum',
+    lat: 50.087,
+    lng: 14.421,
+    level: 4,
+    members: 31,
+    strength: 5480,
+    palisade: 1,
+    treasury: 2480,
+    weekendShare: 0.31,
+  },
+  {
+    id: DEMO_GYMS[2].id,
+    name: 'Olymp Fitness',
+    lat: 50.104,
+    lng: 14.418,
+    level: 9,
+    members: 48,
+    strength: 6120,
+    palisade: 3,
+    treasury: 1900,
+    weekendShare: 0.12,
+  },
+  {
+    id: sid('gym:spartan'),
+    name: 'Spartan Box',
+    lat: 50.066,
+    lng: 14.474,
+    level: 6,
+    members: 22,
+    strength: 4820,
+    palisade: 2,
+    treasury: 3100,
+    weekendShare: 0.24,
+  },
+  {
+    id: sid('gym:karlin'),
+    name: 'Fit Point Karlín',
+    lat: 50.093,
+    lng: 14.452,
+    level: 2,
+    members: 9,
+    strength: 1150,
+    palisade: 0,
+    treasury: 380,
+    weekendShare: 0.4,
+  },
+  {
+    id: sid('gym:smichov'),
+    name: 'Smíchov Iron',
+    lat: 50.07,
+    lng: 14.403,
+    level: 5,
+    members: 27,
+    strength: 3900,
+    palisade: 1,
+    treasury: 1200,
+    weekendShare: 0.2,
+  },
+  {
+    id: sid('gym:holesovice'),
+    name: 'Holešovice Barbell',
+    lat: 50.11,
+    lng: 14.452,
+    level: 3,
+    members: 14,
+    strength: 2100,
+    palisade: 0,
+    treasury: 640,
+    weekendShare: 0.35,
+  },
+  {
+    id: sid('gym:vinohrady'),
+    name: 'Vinohrady Strength',
+    lat: 50.075,
+    lng: 14.437,
+    level: 7,
+    members: 35,
+    strength: 5900,
+    palisade: 2,
+    treasury: 2250,
+    weekendShare: 0.18,
+  },
+  {
+    id: sid('gym:dejvice'),
+    name: 'Dejvice Forge',
+    lat: 50.101,
+    lng: 14.375,
+    level: 1,
+    members: 6,
+    strength: 640,
+    palisade: 0,
+    treasury: 150,
+    weekendShare: 0.5,
+  },
+];
+
+/** The strongest gladiators per demo tribe (by gear power). */
+export const DEMO_TRIBE_BEST: Record<
+  string,
+  { name: string; level: number; style: string; loadout: Record<string, string> }[]
+> = {
+  default: [
+    {
+      name: 'Marek',
+      level: 22,
+      style: 'murmillo',
+      loadout: {
+        helmet: 'helmet_galea_gold',
+        weapon: 'weapon_hasta',
+        shield: 'shield_scutum',
+        guard: 'guard_fasciae',
+        armour: 'armour_lorica',
+      },
+    },
+    {
+      name: 'Dan',
+      level: 14,
+      style: 'thraex',
+      loadout: {
+        helmet: 'helmet_thraex',
+        weapon: 'weapon_sica',
+        shield: 'shield_parma',
+        guard: 'guard_ocreae',
+        armour: 'armour_subligaculum',
+      },
+    },
+    {
+      name: 'Filip',
+      level: 9,
+      style: 'retiarius',
+      loadout: {
+        helmet: 'helmet_galea',
+        weapon: 'weapon_trident',
+        shield: 'shield_parmula',
+        guard: 'guard_galerus',
+        armour: 'armour_subligaculum',
+      },
+    },
+  ],
+};

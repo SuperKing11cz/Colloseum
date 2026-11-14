@@ -16,6 +16,7 @@ import { useData } from '@/stores/data';
 import { accentA, colors, tabular, type } from '@/theme/tokens';
 import { useBellum, useGymManager } from './api';
 import { FortressView } from './FortressView';
+import { MapRow } from './MapViews';
 import { useMyVisitDaysThisMonth } from './hooks';
 
 export function BellumView() {
@@ -39,6 +40,7 @@ export function BellumView() {
 
   return (
     <View style={{ gap: 16 }}>
+      <MapRow />
       <GlassCard radius={24} style={{ gap: 6, padding: 18 }}>
         <Text style={type.small}>
           Bellum · {seasonName(seasonOf(new Date()))} · {days} day{days === 1 ? '' : 's'} left

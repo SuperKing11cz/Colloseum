@@ -95,3 +95,7 @@ export { default as Anvil } from 'lucide-react-native/icons/anvil';
 export { default as Axe } from 'lucide-react-native/icons/axe';
 export { default as Warehouse } from 'lucide-react-native/icons/warehouse';
 export { default as Gem } from 'lucide-react-native/icons/gem';
+export { default as Lock } from 'lucide-react-native/icons/lock';
+export { default as Bath } from 'lucide-react-native/icons/bath';
+export { default as Store } from 'lucide-react-native/icons/store';
+export { default as Map } from 'lucide-react-native/icons/map';

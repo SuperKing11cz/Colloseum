@@ -171,3 +171,26 @@ export function timeLeftText(readyAt: string, now: Date = new Date()): string {
   if (h) return `${h} h ${m} min`;
   return `${m} min`;
 }
+
+/** What the fortress looks like: training ground → palisade ludus → stone arena → Colosseum. */
+export type FortressStage = 0 | 1 | 2 | 3;
+
+export const FORTRESS_STAGES: { name: string; from: number }[] = [
+  { name: 'Training ground', from: 0 },
+  { name: 'Wooden ludus', from: 3 },
+  { name: 'Stone arena', from: 6 },
+  { name: 'Colosseum', from: 10 },
+];
+
+/** The fortress level: every standing building level added up (damaged ones still stand). */
+export function fortressLevel(buildings: Building[], now: Date = new Date()): number {
+  return buildings.reduce((sum, b) => sum + currentLevel(b, now), 0);
+}
+
+export function fortressStage(level: number): FortressStage {
+  let stage = 0;
+  FORTRESS_STAGES.forEach((s, i) => {
+    if (level >= s.from) stage = i;
+  });
+  return stage as FortressStage;
+}

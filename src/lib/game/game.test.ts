@@ -1,10 +1,12 @@
 import type { Session, SetEntry } from '../types';
-import { attributes, cellItems } from './attributes';
+import { attributes, cellItems, homeStage } from './attributes';
 import { bellumScore, duelScore, warPoints, warScore, warSpoils, warWinner } from './battles';
 import { DENARII, LAURELS, XP } from './config';
 import { computeGame, qualifies, seasonsFrom, type GameInput } from './engine';
 import {
   currentLevel,
+  fortressLevel,
+  fortressStage,
   levelCost,
   machineBonus,
   memberLimit,
@@ -354,6 +356,19 @@ describe('fortress', () => {
   it('costs more for a gym', () => {
     expect(levelCost('bench', 2, 'ludus')).toBe(300);
     expect(levelCost('bench', 2, 'gym')).toBe(900);
+  });
+  it('adds up standing levels into a fortress level and stage', () => {
+    const list = [b({ level: 2, damaged: true }), b({ building: 'rack', level: 3 })];
+    expect(fortressLevel(list, now)).toBe(5);
+    expect(fortressStage(0)).toBe(0);
+    expect(fortressStage(3)).toBe(1);
+    expect(fortressStage(9)).toBe(2);
+    expect(fortressStage(10)).toBe(3);
+  });
+  it('picks the home picture from the rank', () => {
+    expect(homeStage('tiro')).toBe(0);
+    expect(homeStage('primus')).toBe(2);
+    expect(homeStage('rudiarius')).toBe(3);
   });
 });
 

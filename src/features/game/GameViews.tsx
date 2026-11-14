@@ -18,6 +18,7 @@ import {
   Dumbbell,
   HardHat,
   Lamp,
+  Lock,
   Shield,
   Shirt,
   Sword,
@@ -26,7 +27,8 @@ import {
   type LucideIcon,
 } from '@/components/icons';
 import { LogoMark } from '@/components/Logo';
-import { cellItems, CELL_ROOMS, type Attributes } from '@/lib/game/attributes';
+import { ArtStage, GladiatorArt, HomeArt } from '@/components/art/Art';
+import { cellItems, CELL_ROOMS, homeStage, type Attributes } from '@/lib/game/attributes';
 import {
   leagueFor,
   nextLeague,
@@ -129,35 +131,54 @@ export function SeasonCard() {
   );
 }
 
-/** The ranks from Tiro to Rudiarius, with the ones reached ticked. */
+/**
+ * The path of the gladiator: every rank with its look, the ones reached ticked, the current one
+ * outlined in red. Rudiarius stays hidden until it is earned.
+ */
 export function RankLadder({ level }: { level: number }) {
   const current = rankFor(level);
   return (
-    <Glass radius={22} style={{ paddingVertical: 6, paddingHorizontal: 16 }}>
-      {RANKS.map((r, i) => {
+    <View style={{ gap: 10 }}>
+      {RANKS.map((r) => {
         const reached = level >= r.from;
         const here = r.id === current.id;
+        const secret = r.id === 'rudiarius' && !reached;
         return (
-          <View key={r.id} style={[styles.rankRow, i > 0 && styles.sep]}>
-            <View
-              style={[
-                styles.rankDot,
-                reached && { backgroundColor: here ? colors.accent : colors.fillStrong },
-              ]}
-            >
-              {reached ? (
-                <Check size={12} color={here ? colors.white : colors.text} strokeWidth={3} />
-              ) : null}
+          <Glass
+            key={r.id}
+            radius={22}
+            style={[styles.rankRow, here && styles.rankHere]}
+            accessibilityLabel={`${r.name}, ${here ? 'your rank' : reached ? 'reached' : `from level ${r.from}`}`}
+          >
+            <ArtStage height={76} style={styles.rankArt}>
+              {secret ? (
+                <Lock size={20} color={colors.text3} strokeWidth={2} />
+              ) : (
+                <View style={!reached && { opacity: 0.45 }}>
+                  <GladiatorArt rank={r.id} width={68} />
+                </View>
+              )}
+            </ArtStage>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={type.rpg}>{r.name}</Text>
+              <Text style={type.caption}>
+                {secret ? 'A legendary look, shown once earned' : r.look}
+              </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[type.bodyStrong, !reached && { color: colors.text2 }]}>{r.name}</Text>
-              <Text style={type.small}>{r.blurb}</Text>
-            </View>
-            <Text style={[type.small, tabular]}>Lv {r.from}</Text>
-          </View>
+            {here ? (
+              <Text style={[type.captionStrong, { color: colors.accent }]}>now</Text>
+            ) : reached ? (
+              <View style={styles.reached}>
+                <Check size={13} color={colors.text2} strokeWidth={2.6} />
+                <Text style={type.captionStrong}>earned</Text>
+              </View>
+            ) : (
+              <Text style={[type.captionStrong, tabular]}>from lv {r.from}</Text>
+            )}
+          </Glass>
         );
       })}
-    </Glass>
+    </View>
   );
 }
 
@@ -177,11 +198,15 @@ const ITEM_ICONS: Record<string, LucideIcon | 'laurel'> = {
 
 /** The cell: grows with the rank, fills with things at set levels. Cosmetic, for showing off. */
 export function CellView({ level, owner }: { level: number; owner?: string }) {
-  const room = CELL_ROOMS[rankFor(level).id];
+  const rank = rankFor(level).id;
+  const room = CELL_ROOMS[rank];
   const items = cellItems(level);
   const open = items.filter((i) => i.unlocked).length;
   return (
     <GlassCard radius={22} style={{ gap: 14, padding: 16 }}>
+      <ArtStage height={190}>
+        <HomeArt stage={homeStage(rank)} width={200} />
+      </ArtStage>
       <View style={styles.row}>
         <View style={{ gap: 2, flex: 1 }}>
           <Text style={type.bodyStrong}>
@@ -272,18 +297,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 56,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    paddingLeft: 10,
+    paddingRight: 14,
   },
-  sep: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator },
-  rankDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.fill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  rankHere: { borderWidth: 1.5, borderColor: colors.accent },
+  rankArt: { width: 68, borderRadius: 16, boxShadow: 'none' },
+  reached: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   items: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 12 },
   item: { width: '25%', alignItems: 'center', gap: 6 },
   itemIcon: {

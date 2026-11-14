@@ -8,6 +8,32 @@ import type { Release } from '@/lib/changelog';
 
 export const CHANGELOG: Release[] = [
   {
+    id: '2026-11-14',
+    date: '2026-11-14',
+    title: 'Your gladiator and the city',
+    highlights: [
+      {
+        feature: 'city',
+        title: 'Your city around the Colosseum',
+        body: 'Choose how your gladiator fights, earn gear in the forge, and lead your gym’s tribe against the other gyms of your city on the map.',
+        where: 'Today → The city',
+      },
+    ],
+    items: [
+      'The city: every building opens a part of the game. Find it on Today.',
+      'Fighting style: Murmillo, Thraex, Retiarius, Secutor, Hoplomachus or Bestiarius. Your style sets your look and gives +15 XP for a workout trained its way. Change it once a season.',
+      'The forge: helmets, weapons, shields, guards and armour. Buy them with denarii or open them with levels, verified workouts and leagues. Never with money.',
+      'The map of your city: every gym’s tribe with its territory. Look at a rival tribe, compare your gear with their best, and attack.',
+      'Tribe attacks: a day’s warning, then 3 days of verified workouts. The winner takes territory and denarii and damages the walls. Pledge to train when your tribe is attacked.',
+      'Lost a defence? Answer within a day: revenge is free and scores 20 % more.',
+      'Your gladiator now stands at the top of Profile → Gladiator and changes its look with every rank, from a tunic and wooden sword to golden armour.',
+      'The path of the gladiator shows every rank with its look. The last one stays a secret until you earn it.',
+      'Your home is drawn too: a hut, a wooden house, a stone domus and at last a villa.',
+      'Ludus and gym fortresses are drawn as they grow, from a training ground to a wooden ludus, a stone arena and finally the Colosseum.',
+      'A new rank after a workout shows your gladiator in its new look.',
+    ],
+  },
+  {
     id: '2026-11-13c',
     date: '2026-11-13',
     title: 'Smaller crews can fight',

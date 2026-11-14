@@ -1,6 +1,13 @@
 /** Big features with a live preview and a "Show me" (see features/onboarding/Highlights.tsx). */
 export type FeatureId =
-  'badges' | 'friend-qr' | 'favorites' | 'train-together' | 'generate' | 'notifications' | 'game';
+  | 'badges'
+  | 'friend-qr'
+  | 'favorites'
+  | 'train-together'
+  | 'generate'
+  | 'notifications'
+  | 'game'
+  | 'city';
 
 /** A big new feature, shown as its own card above the release's list. */
 export interface Highlight {

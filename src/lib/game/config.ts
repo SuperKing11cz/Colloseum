@@ -119,3 +119,42 @@ export const BELLUM = {
 export const GYM_COST_FACTOR = 3;
 /** Repairing a damaged building costs this share of its level cost. */
 export const REPAIR_SHARE = 0.4;
+
+/** Fighting style: a flat XP bonus for a workout in the style's way of training. */
+export const STYLE = {
+  xp: 15,
+  /** Murmillo: a working set of this many reps or fewer counts as heavy. */
+  heavyReps: 6,
+  /** Thraex: this share of working sets in the 8–15 rep range. */
+  volumeShare: 2 / 3,
+  /** Hoplomachus: this many muscle groups in one workout. */
+  groups: 4,
+  /** Bestiarius: this share of working sets with no added weight. */
+  bodyweightShare: 0.5,
+} as const;
+
+/** Gear raises a member's war points by up to this share. */
+export const GEAR = { maxWarBonus: 0.15 } as const;
+
+/** Tribe attacks: one gym's tribe against another in the same city. */
+export const TRIBE_WAR = {
+  /** Warning before the battle starts, for the defenders to get ready. */
+  warningHours: 24,
+  days: 3,
+  /** Paid from the attacking tribe's treasury (a revenge attack is free). */
+  cost: 100,
+  /** Who may declare: from this level (the Gladiator rank). */
+  minLevel: 5,
+  /** Each side needs this many active members; also the least a score is divided by. */
+  minActive: 3,
+  rematchDays: 7,
+  spoilsShare: 0.2,
+  maxSpoils: 500,
+  /** Defender's palisade bonus per level. */
+  wallBonus: 0.03,
+  /** A revenge attack within this many hours of a lost defence gets the bonus and is free. */
+  revengeHours: 24,
+  revengeBonus: 0.2,
+  /** Strength: points per verified workout in the last 14 days, plus each member's gear power. */
+  strengthPerWorkout: 20,
+} as const;

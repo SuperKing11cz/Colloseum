@@ -96,3 +96,18 @@ export const CELL_ROOMS: Record<RankId, string> = {
 export function cellItems(level: number): { item: CellItem; unlocked: boolean }[] {
   return CELL_ITEMS.map((item) => ({ item, unlocked: level >= item.level }));
 }
+
+/** The picture of the home: hut → wooden house → stone domus → villa. */
+export type HomeStage = 0 | 1 | 2 | 3;
+
+const HOME_STAGES: Record<RankId, HomeStage> = {
+  tiro: 0,
+  gladiator: 1,
+  veteranus: 2,
+  primus: 2,
+  rudiarius: 3,
+};
+
+export function homeStage(rank: RankId): HomeStage {
+  return HOME_STAGES[rank];
+}

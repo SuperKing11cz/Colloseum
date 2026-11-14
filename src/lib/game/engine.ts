@@ -14,9 +14,11 @@ import {
   QUALIFYING_SETS,
   UNUSUAL_JUMP,
   UNUSUAL_MIN_SESSIONS,
+  STYLE,
   XP,
 } from './config';
 import { carryOver, levelFromXp, nextSeason, seasonOf } from './levels';
+import { styleDef, styleMatches, type StyleId } from './styles';
 import type { Verification } from './visits';
 
 export interface RewardPart {
@@ -91,10 +93,28 @@ export interface GameInput {
   denariiBonus?: (s: Session, exerciseNames: string[]) => number;
   /** Laurels from duels, wars and Bellum, by season. */
   awards?: Record<string, number>;
+  /**
+   * Fighting styles chosen, oldest first: a workout trained the way of the style in force when it
+   * started (`since` is an ISO time) earns a bonus. Kept as a history so a change never takes
+   * back XP already earned.
+   */
+  styles?: { id: StyleId; since: string }[];
+  /** Muscles of an exercise, for the style rules. */
+  exerciseMuscles?: (id: string) => string[];
   now?: Date;
 }
 
 const DAY = 86400000;
+
+/** The style in force at a time: the last one chosen before it. */
+export function styleAt(
+  styles: { id: StyleId; since: string }[] | undefined,
+  at: string,
+): { id: StyleId; since: string } | null {
+  let out = null;
+  for (const st of styles ?? []) if (st.since <= at) out = st;
+  return out;
+}
 
 /** Done working sets: no warm-ups. */
 export function workingSets(s: Session) {
@@ -227,6 +247,16 @@ export function computeGame(input: GameInput): GameState {
         });
       if (input.together?.has(s.id))
         xpParts.push({ label: 'Trained together', amount: XP.together });
+      const style = styleAt(input.styles, s.started_at);
+      if (
+        style &&
+        styleMatches(style.id, {
+          sets: workingSets(s),
+          muscles: (id) => input.exerciseMuscles?.(id) ?? [],
+          streak,
+        })
+      )
+        xpParts.push({ label: `${styleDef(style.id).name} style`, amount: STYLE.xp });
       xpRaw = xpParts.reduce((sum, p) => sum + p.amount, 0);
       xpGranted = Math.min(xpRaw, Math.max(0, XP.dailyCap - totals.xp));
 
